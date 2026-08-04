@@ -22,7 +22,7 @@ export async function GET() {
   const exercicesAvecCible = await Promise.all(
     exosTries.map(async (exo) => {
       const historique = await seriesRepository.parExercice(exo.id);
-      const cible = calculerCibleAuto(historique);
+      const cible = calculerCibleAuto(historique, exo);
       const seriesAujourdhui = historique.filter((s) => s.date === today);
       return { ...exo, cible, seriesAujourdhui };
     })

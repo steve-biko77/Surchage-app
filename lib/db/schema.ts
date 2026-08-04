@@ -1,4 +1,4 @@
-import { pgTable, text, real, integer, boolean, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, real, integer, boolean, timestamp, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 // --- Coeur de domaine : schema de persistance (adapter Postgres) ---
 // Chaque table correspond a une entite du diagramme de classes (chapitre IV, Figure 1)
@@ -17,6 +17,9 @@ export const objectifs = pgTable("objectifs", {
   minutesInvesties: integer("minutes_investies").notNull().default(0),
   deadline: text("deadline"), // ISO date string, nullable
   createdAt: timestamp("created_at").defaultNow(),
+  type: text("type").notNull().default("temps"), // "temps" | "performance"
+  exerciceId: uuid("exercice_id").references((): AnyPgColumn => exercices.id),
+  poidsCible: real("poids_cible"),
 });
 
 export const programmes = pgTable("programmes", {
@@ -34,6 +37,9 @@ export const exercices = pgTable("exercices", {
   prioritaire: boolean("prioritaire").notNull().default(false),
   objectifId: uuid("objectif_id").references(() => objectifs.id),
   ordre: integer("ordre").notNull().default(0),
+  incrementKg: real("increment_kg").notNull().default(2),
+  repPlancher: integer("rep_plancher").notNull().default(8),
+  repPlafond: integer("rep_plafond").notNull().default(12),
 });
 
 export const series = pgTable("series", {

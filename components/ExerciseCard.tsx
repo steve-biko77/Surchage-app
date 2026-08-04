@@ -1,7 +1,11 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Star, CheckCircle2, Target, ChevronDown, Plus } from "lucide-react";
 import MuscleSilhouette from "./MuscleSilhouette";
+import { Card } from "./ui/card";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
 type Cible = { poidsCible: number; repsCible: number; justification: string } | null;
 type SerieDuJour = { id: string; poids: number; reps: number; sets: number };
@@ -39,72 +43,85 @@ export default function ExerciseCard({
     });
     setSaving(false);
     setNote("");
+    setOpen(false);
     router.refresh();
   }
 
   const dejaFait = exercice.seriesAujourdhui.length > 0;
 
   return (
-    <div className={`rounded-xl border p-4 mb-3 ${exercice.prioritaire ? "border-[#FF5A1F] bg-[#2a1c10]" : "border-[#2a2c34] bg-[#1b1d23]"}`}>
-      <div className="flex items-start gap-3">
+    <Card className={`mb-3 overflow-hidden ${exercice.prioritaire ? "border-[#FF5A1F]/50" : ""}`}>
+      {exercice.prioritaire && <div className="h-0.5 w-full bg-gradient-to-r from-[#FF5A1F] to-transparent" aria-hidden="true" />}
+      <div className="flex items-start gap-3 p-4">
         <MuscleSilhouette groupe={exercice.groupeMusculaire} />
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-[15px]">{exercice.nom}</h3>
-            {exercice.prioritaire && <span className="text-[10px] text-[#FF5A1F]">★ priorisé</span>}
+            <h3 className="truncate font-heading text-base font-bold leading-tight">{exercice.nom}</h3>
+            {exercice.prioritaire && (
+              <Star className="h-3.5 w-3.5 shrink-0 text-[#FF5A1F]" fill="#FF5A1F" aria-label="Exercice priorisé" />
+            )}
           </div>
-          <p className="text-[11px] text-[#8b8d98] uppercase tracking-wide">{exercice.groupeMusculaire}</p>
+          <Badge variant="default" className="mt-1.5">{exercice.groupeMusculaire}</Badge>
 
           {exercice.cible ? (
-            <p className="text-xs text-[#ffd8c2] mt-1">
-              🎯 Cible : {exercice.cible.poidsCible}kg × {exercice.cible.repsCible} reps — {exercice.cible.justification}
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-[#ffd8c2]">
+              <Target className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF5A1F]" aria-hidden="true" />
+              <span>
+                <b className="font-heading text-[13px] tracking-wide">{exercice.cible.poidsCible}kg × {exercice.cible.repsCible}</b>
+                <span className="block text-[var(--grey)]">{exercice.cible.justification}</span>
+              </span>
             </p>
           ) : (
-            <p className="text-xs text-[#8b8d98] mt-1">Première fois sur cet exercice — enregistre ta série de référence.</p>
+            <p className="mt-2 text-xs text-[var(--grey)]">Première fois sur cet exercice — enregistre ta série de référence.</p>
           )}
 
           {dejaFait && (
-            <p className="text-xs text-[#4CAF50] mt-1">
-              ✓ Déjà loggé aujourd'hui : {exercice.seriesAujourdhui.map((s) => `${s.poids}kg×${s.reps}`).join(", ")}
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-[var(--success)]">
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              {exercice.seriesAujourdhui.map((s) => `${s.poids}kg×${s.reps}`).join(", ")}
             </p>
           )}
 
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setOpen(!open)}
-            className="text-xs text-[#3B82C4] mt-2"
+            className="mt-2 -ml-2 h-8 px-2 text-[#3B82C4] hover:text-[#5ba3e0]"
           >
-            {open ? "Fermer" : dejaFait ? "+ Ajouter une série" : "Logger une série"}
-          </button>
+            {open ? (
+              <>Fermer <ChevronDown className="h-3.5 w-3.5 rotate-180 transition-transform" /></>
+            ) : dejaFait ? (
+              <>Ajouter une série <Plus className="h-3.5 w-3.5" /></>
+            ) : (
+              <>Logger une série <ChevronDown className="h-3.5 w-3.5" /></>
+            )}
+          </Button>
         </div>
       </div>
 
       {open && (
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 border-t border-[var(--card-border)] bg-black/10 p-4">
           <div>
-            <label className="text-[10px] text-[#8b8d98] uppercase">Poids (kg)</label>
-            <input type="number" step="0.5" value={poids} onChange={(e) => setPoids(parseFloat(e.target.value) || 0)} className="w-full text-sm" />
+            <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor={`poids-${exercice.id}`}>Poids (kg)</label>
+            <input id={`poids-${exercice.id}`} type="number" step="0.5" inputMode="decimal" value={poids} onChange={(e) => setPoids(parseFloat(e.target.value) || 0)} className="w-full text-sm" />
           </div>
           <div>
-            <label className="text-[10px] text-[#8b8d98] uppercase">Reps</label>
-            <input type="number" value={reps} onChange={(e) => setReps(parseInt(e.target.value) || 0)} className="w-full text-sm" />
+            <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor={`reps-${exercice.id}`}>Reps</label>
+            <input id={`reps-${exercice.id}`} type="number" inputMode="numeric" value={reps} onChange={(e) => setReps(parseInt(e.target.value) || 0)} className="w-full text-sm" />
           </div>
           <div>
-            <label className="text-[10px] text-[#8b8d98] uppercase">Séries</label>
-            <input type="number" value={sets} onChange={(e) => setSets(parseInt(e.target.value) || 0)} className="w-full text-sm" />
+            <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor={`sets-${exercice.id}`}>Séries</label>
+            <input id={`sets-${exercice.id}`} type="number" inputMode="numeric" value={sets} onChange={(e) => setSets(parseInt(e.target.value) || 0)} className="w-full text-sm" />
           </div>
           <input
             type="text" placeholder="Note (optionnel)" value={note} onChange={(e) => setNote(e.target.value)}
             className="col-span-3 text-sm"
           />
-          <button
-            onClick={enregistrer}
-            disabled={saving}
-            className="col-span-3 bg-gradient-to-b from-[#ff6b34] to-[#8a3517] text-[#191008] font-bold uppercase text-xs py-2.5 rounded-md mt-1"
-          >
-            {saving ? "..." : "Enregistrer la série"}
-          </button>
+          <Button onClick={enregistrer} disabled={saving} className="col-span-3 mt-1">
+            {saving ? "Enregistrement…" : "Enregistrer la série"}
+          </Button>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

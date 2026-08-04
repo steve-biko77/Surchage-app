@@ -17,28 +17,48 @@ export function todayISO(date: Date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** incrementParDefaut - les exercices a la poulie/machine cablee progressent par pas de 5kg */
+export function incrementParDefaut(nomExercice: string): number {
+  return nomExercice.toLowerCase().includes("poulie") ? 5 : 2;
+}
+
 /**
  * calculerCibleAuto - chapitre V, 5.5
- * Regle : si la derniere serie a atteint ses reps visees, on propose +2.5kg
- * (ou +1 rep si poids du corps). Sinon on maintient la charge.
+ * Double progression : on gagne des reps a charge fixe jusqu'a repPlafond,
+ * puis on monte le poids de incrementKg et on redescend a repPlancher.
+ * En cas d'echec (note "echec" ou reps < repPlancher), on stabilise la charge actuelle.
  */
-export function calculerCibleAuto(dernieresSeries: Serie[]): CibleAuto | null {
+export function calculerCibleAuto(
+  dernieresSeries: Serie[],
+  exercice: { incrementKg: number; repPlancher: number; repPlafond: number }
+): CibleAuto | null {
   if (dernieresSeries.length === 0) return null;
   const sorted = [...dernieresSeries].sort((a, b) => a.date.localeCompare(b.date));
   const derniere = sorted[sorted.length - 1];
+  const echec =
+    derniere.note?.toLowerCase().includes("échec") ||
+    derniere.note?.toLowerCase().includes("echec") ||
+    derniere.reps < exercice.repPlancher;
 
-  const auPoidsDuCorps = derniere.poids === 0;
-  const echec = derniere.note?.toLowerCase().includes("échec") || derniere.note?.toLowerCase().includes("echec");
-
-  if (auPoidsDuCorps) {
-    return echec
-      ? { poidsCible: 0, repsCible: derniere.reps, justification: "Reproduis la meme performance (derniere serie difficile)." }
-      : { poidsCible: 0, repsCible: derniere.reps + 1, justification: "Vise +1 repetition par rapport a la derniere fois." };
+  if (echec) {
+    return {
+      poidsCible: derniere.poids,
+      repsCible: exercice.repPlancher,
+      justification: "Stabilise a la charge actuelle avant de reprogresser.",
+    };
   }
-
-  return echec
-    ? { poidsCible: derniere.poids, repsCible: derniere.reps, justification: "Meme charge, stabilise avant de progresser." }
-    : { poidsCible: Math.round((derniere.poids + 2.5) * 2) / 2, repsCible: derniere.reps, justification: "+2.5kg par rapport a la derniere seance." };
+  if (derniere.reps < exercice.repPlafond) {
+    return {
+      poidsCible: derniere.poids,
+      repsCible: derniere.reps + 1,
+      justification: `Meme charge, +1 repetition (double progression, plafond ${exercice.repPlafond}).`,
+    };
+  }
+  return {
+    poidsCible: Math.round((derniere.poids + exercice.incrementKg) * 2) / 2,
+    repsCible: exercice.repPlancher,
+    justification: `Plafond de ${exercice.repPlafond} reps atteint -> +${exercice.incrementKg}kg, reps repartent a ${exercice.repPlancher}.`,
+  };
 }
 
 /** calculerNiveauFlamme - chapitre IV, Figure 4 (diagramme d'etat) */
@@ -72,4 +92,14 @@ export function calculerProgression(seriesExercice: Serie[]) {
 export function calculerCoherence(joursActifs: number, joursPrevus: number): number {
   if (joursPrevus <= 0) return 0;
   return Math.round((joursActifs / joursPrevus) * 100);
+}
+
+/** calculerProgressionObjectifPerformance - % d'atteinte d'un objectif "performance", depuis l'historique reel */
+export function calculerProgressionObjectifPerformance(
+  seriesExercice: Serie[],
+  poidsCible: number
+): number {
+  const meilleurPoids = seriesExercice.reduce((max, s) => Math.max(max, s.poids), 0);
+  if (poidsCible <= 0) return 0;
+  return Math.min(100, Math.round((meilleurPoids / poidsCible) * 100));
 }

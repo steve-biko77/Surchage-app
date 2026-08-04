@@ -1,25 +1,64 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Clock, TrendingUp, Sparkles } from "lucide-react";
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { Progress } from "./ui/progress";
+import { Badge } from "./ui/badge";
 
-type Objectif = { id: string; nom: string; heuresCible: number; minutesInvesties: number; deadline: string | null };
+type TypeObjectif = "temps" | "performance";
 
-export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs: Objectif[] }) {
+type Objectif = {
+  id: string;
+  nom: string;
+  heuresCible: number;
+  minutesInvesties: number;
+  deadline: string | null;
+  type: TypeObjectif;
+  exerciceId: string | null;
+  poidsCible: number | null;
+  progressionPerformance: number | null;
+  meilleurPoids: number | null;
+};
+
+type Exercice = { id: string; nom: string };
+
+export default function ObjectifsClient({
+  initialObjectifs,
+  exercices,
+}: {
+  initialObjectifs: Objectif[];
+  exercices: Exercice[];
+}) {
   const router = useRouter();
+  const [type, setType] = useState<TypeObjectif>("temps");
   const [nom, setNom] = useState("");
   const [heures, setHeures] = useState(50);
   const [deadline, setDeadline] = useState("");
+  const [exerciceId, setExerciceId] = useState(exercices[0]?.id ?? "");
+  const [poidsCible, setPoidsCible] = useState(50);
   const [saving, setSaving] = useState(false);
 
   async function creer() {
-    if (!nom || !heures) return;
+    if (!nom) return;
+    if (type === "temps" && !heures) return;
+    if (type === "performance" && (!exerciceId || !poidsCible)) return;
+
     setSaving(true);
     await fetch("/api/objectifs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nom, disciplineId: null, heuresCible: heures, deadline: deadline || null }),
+      body: JSON.stringify(
+        type === "temps"
+          ? { nom, disciplineId: null, heuresCible: heures, deadline: deadline || null, type }
+          : { nom, disciplineId: null, deadline: deadline || null, type, exerciceId, poidsCible }
+      ),
     });
-    setNom(""); setHeures(50); setDeadline("");
+    setNom("");
+    setHeures(50);
+    setDeadline("");
+    setPoidsCible(50);
     setSaving(false);
     router.refresh();
   }
@@ -36,45 +75,132 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
   return (
     <div>
       {initialObjectifs.length === 0 && (
-        <p className="text-sm text-[#8b8d98] mb-4">Aucun objectif pour l'instant.</p>
+        <p className="mb-4 text-sm text-[var(--grey)]">Aucun objectif pour l&apos;instant.</p>
       )}
+
       {initialObjectifs.map((o) => {
+        if (o.type === "performance") {
+          const exo = exercices.find((e) => e.id === o.exerciceId);
+          const pct = o.progressionPerformance ?? 0;
+          const atteint = pct >= 100;
+          return (
+            <Card key={o.id} className="mb-3">
+              <CardContent className="pt-4">
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[#3B82C4]" aria-hidden="true" />
+                      <h3 className="truncate font-heading font-bold">{o.nom}</h3>
+                    </div>
+                    <p className="text-[10px] uppercase tracking-wide text-[var(--grey)]">{exo?.nom ?? "Exercice"}</p>
+                  </div>
+                  {atteint ? (
+                    <Badge variant="success"><Sparkles className="h-3 w-3" />Atteint</Badge>
+                  ) : (
+                    o.deadline && <span className="shrink-0 text-[10px] text-[var(--grey)]">échéance {o.deadline}</span>
+                  )}
+                </div>
+                <Progress value={pct} indicatorClassName="from-[#2a5f8f] to-[#3B82C4]" />
+                <div className="mt-2 flex justify-between text-xs text-[var(--grey)]">
+                  <span>{o.meilleurPoids ?? 0}kg / {o.poidsCible}kg</span>
+                  <span className="font-medium text-[var(--chalk)]">{pct}%</span>
+                </div>
+                <p className="mt-2 text-[10px] text-[var(--grey)]">Progression calculée automatiquement à chaque nouvelle série.</p>
+              </CardContent>
+            </Card>
+          );
+        }
+
         const pct = o.heuresCible > 0 ? Math.min(100, Math.round((o.minutesInvesties / 60 / o.heuresCible) * 100)) : 0;
         return (
-          <div key={o.id} className="rounded-xl border border-[#2a2c34] bg-[#1b1d23] p-4 mb-3">
-            <div className="flex justify-between items-baseline mb-2">
-              <h3 className="font-bold">{o.nom}</h3>
-              {o.deadline && <span className="text-[10px] text-[#8b8d98]">échéance {o.deadline}</span>}
-            </div>
-            <div className="h-2 rounded bg-[#14151a] overflow-hidden mb-2">
-              <div className="h-full bg-gradient-to-r from-[#8a3517] to-[#FF5A1F]" style={{ width: `${pct}%` }} />
-            </div>
-            <div className="flex justify-between text-xs text-[#8b8d98] mb-2">
-              <span>{Math.round((o.minutesInvesties / 60) * 10) / 10} / {o.heuresCible}h</span>
-              <span>{pct}%</span>
-            </div>
-            <div className="flex gap-2">
-              {[15, 30, 60].map((m) => (
-                <button key={m} onClick={() => ajouterMinutes(o.id, m)} className="text-[11px] px-2.5 py-1 rounded-full border border-[#3a3e4a] text-[#EDEDEA]">
-                  +{m < 60 ? `${m}min` : "1h"}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Card key={o.id} className="mb-3">
+            <CardContent className="pt-4">
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Clock className="h-3.5 w-3.5 shrink-0 text-[#FF5A1F]" aria-hidden="true" />
+                  <h3 className="truncate font-heading font-bold">{o.nom}</h3>
+                </div>
+                {o.deadline && <span className="shrink-0 text-[10px] text-[var(--grey)]">échéance {o.deadline}</span>}
+              </div>
+              <Progress value={pct} />
+              <div className="mt-2 mb-3 flex justify-between text-xs text-[var(--grey)]">
+                <span>{Math.round((o.minutesInvesties / 60) * 10) / 10} / {o.heuresCible}h</span>
+                <span className="font-medium text-[var(--chalk)]">{pct}%</span>
+              </div>
+              <div className="flex gap-2">
+                {[15, 30, 60].map((m) => (
+                  <Button key={m} variant="pill" size="sm" onClick={() => ajouterMinutes(o.id, m)}>
+                    +{m < 60 ? `${m}min` : "1h"}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         );
       })}
 
-      <div className="rounded-xl border border-[#3B82C4]/40 bg-[#1b1d23] p-4 mt-6">
-        <h3 className="text-xs uppercase tracking-wide text-[#3B82C4] font-bold mb-3">Nouvel objectif</h3>
-        <input placeholder="Nom de l'objectif" value={nom} onChange={(e) => setNom(e.target.value)} className="w-full text-sm mb-2" />
-        <div className="flex gap-2 mb-3">
-          <input type="number" placeholder="Heures visées" value={heures} onChange={(e) => setHeures(parseFloat(e.target.value) || 0)} className="flex-1 text-sm" />
-          <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="flex-1 text-sm" />
-        </div>
-        <button onClick={creer} disabled={saving} className="w-full bg-gradient-to-b from-[#5ba3e0] to-[#2a5f8f] text-[#0a1420] font-bold uppercase text-xs py-2.5 rounded-md">
-          {saving ? "..." : "Créer l'objectif"}
-        </button>
-      </div>
+      <Card className="mt-6 border-[#3B82C4]/40">
+        <CardContent className="pt-4">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3B82C4]">Nouvel objectif</h3>
+
+          <div className="mb-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Type d'objectif">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={type === "temps"}
+              onClick={() => setType("temps")}
+              className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-xs font-medium transition-colors duration-150 ${type === "temps" ? "border-[#FF5A1F] bg-[#2a1c10] text-[#FF5A1F]" : "border-[var(--steel)] text-[var(--grey)] hover:text-[var(--chalk)]"}`}
+            >
+              <Clock className="h-3.5 w-3.5" aria-hidden="true" /> Temps
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={type === "performance"}
+              onClick={() => setType("performance")}
+              className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-xs font-medium transition-colors duration-150 ${type === "performance" ? "border-[#3B82C4] bg-[#122233] text-[#3B82C4]" : "border-[var(--steel)] text-[var(--grey)] hover:text-[var(--chalk)]"}`}
+            >
+              <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" /> Performance
+            </button>
+          </div>
+
+          <label className="sr-only" htmlFor="obj-nom">Nom de l&apos;objectif</label>
+          <input id="obj-nom" placeholder="Nom de l'objectif" value={nom} onChange={(e) => setNom(e.target.value)} className="mb-2 w-full text-sm" />
+
+          {type === "temps" ? (
+            <div className="mb-3 flex gap-2">
+              <div className="flex-1">
+                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="obj-heures">Heures visées</label>
+                <input id="obj-heures" type="number" inputMode="decimal" value={heures} onChange={(e) => setHeures(parseFloat(e.target.value) || 0)} className="w-full text-sm" />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="obj-deadline">Échéance</label>
+                <input id="obj-deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="w-full text-sm" />
+              </div>
+            </div>
+          ) : (
+            <div className="mb-3 flex gap-2">
+              <div className="flex-1">
+                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="obj-exercice">Exercice</label>
+                <select id="obj-exercice" value={exerciceId} onChange={(e) => setExerciceId(e.target.value)} className="w-full text-sm">
+                  {exercices.length === 0 && <option value="">Aucun exercice</option>}
+                  {exercices.map((e) => (
+                    <option key={e.id} value={e.id}>{e.nom}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="obj-poids">Poids cible (kg)</label>
+                <input id="obj-poids" type="number" step="0.5" inputMode="decimal" value={poidsCible} onChange={(e) => setPoidsCible(parseFloat(e.target.value) || 0)} className="w-full text-sm" />
+              </div>
+            </div>
+          )}
+
+          <Button onClick={creer} disabled={saving} variant="secondary" className="w-full">
+            {saving ? "Création…" : "Créer l'objectif"}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -83,7 +83,15 @@ export const objectifsRepository = {
   async all() {
     return db.select().from(objectifs);
   },
-  async create(input: { nom: string; disciplineId: string | null; heuresCible: number; deadline?: string | null }) {
+  async create(input: {
+    nom: string;
+    disciplineId: string | null;
+    heuresCible: number;
+    deadline?: string | null;
+    type?: "temps" | "performance";
+    exerciceId?: string | null;
+    poidsCible?: number | null;
+  }) {
     const [row] = await db.insert(objectifs).values(input).returning();
     return row;
   },

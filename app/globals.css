@@ -1,29 +1,81 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #121317;
-  --bg-card: #1b1d23;
-  --bg-card-2: #22242c;
+  --bg: #0c0d11;
+  --bg-card: #17181e;
+  --bg-card-2: #1e2027;
+  --card-border: #2a2c34;
   --steel: #3a3e4a;
   --chalk: #EDEDEA;
   --grey: #8b8d98;
   --iron: #FF5A1F;
+  --iron-dim: #c2410c;
+  --info: #3B82C4;
+  --success: #4CAF50;
+  --danger: #ef4444;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: radial-gradient(ellipse 900px 500px at 50% -10%, #1d2029 0%, var(--bg) 60%);
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, #1c1f2a 0%, transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--chalk);
-  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+h1, h2, h3, .font-heading {
+  font-family: var(--font-heading), system-ui, sans-serif;
 }
 
 input, select, textarea {
   background: var(--bg-card-2);
   border: 1px solid var(--steel);
   color: var(--chalk);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: 8px;
+  padding: 10px 12px;
   outline: none;
+  font-size: 16px;
+  min-height: 44px;
+  transition: border-color 150ms ease-out;
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--iron);
+}
+
+:focus-visible {
+  outline: 2px solid var(--iron);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--iron);
+  color: #1a0d05;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.animate-flicker {
+  animation: flicker 1.8s ease-in-out infinite;
 }

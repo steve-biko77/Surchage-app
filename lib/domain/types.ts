@@ -14,6 +14,8 @@ export interface Discipline {
   couleur: string;
 }
 
+export type TypeObjectif = "temps" | "performance";
+
 export interface Objectif {
   id: string;
   nom: string;
@@ -21,6 +23,9 @@ export interface Objectif {
   heuresCible: number;
   minutesInvesties: number;
   deadline: string | null;
+  type: TypeObjectif;
+  exerciceId: string | null;
+  poidsCible: number | null;
 }
 
 export interface Programme {
@@ -38,6 +43,9 @@ export interface Exercice {
   prioritaire: boolean;
   objectifId: string | null;
   ordre: number;
+  incrementKg: number;
+  repPlancher: number;
+  repPlafond: number;
 }
 
 export interface Serie {
