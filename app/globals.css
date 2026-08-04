@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #121317;
+  --bg-card: #1b1d23;
+  --bg-card-2: #22242c;
+  --steel: #3a3e4a;
+  --chalk: #EDEDEA;
+  --grey: #8b8d98;
+  --iron: #FF5A1F;
+}
+
+body {
+  background: radial-gradient(ellipse 900px 500px at 50% -10%, #1d2029 0%, var(--bg) 60%);
+  color: var(--chalk);
+  min-height: 100vh;
+}
+
+input, select, textarea {
+  background: var(--bg-card-2);
+  border: 1px solid var(--steel);
+  color: var(--chalk);
+  border-radius: 6px;
+  padding: 8px 10px;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--iron);
+}
