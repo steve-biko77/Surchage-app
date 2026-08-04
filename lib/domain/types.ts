@@ -8,6 +8,8 @@ export type GroupeMusculaire =
   | "dos" | "biceps" | "triceps" | "epaules" | "pectoraux"
   | "jambes" | "avant-bras" | "abdominaux" | "mollets";
 
+export type TypeCharge = "haltere" | "poulie" | "barre" | "poids_du_corps";
+
 export interface Discipline {
   id: string;
   nom: string;
@@ -24,7 +26,6 @@ export interface Objectif {
   minutesInvesties: number;
   deadline: string | null;
   type: TypeObjectif;
-  exerciceId: string | null;
   poidsCible: number | null;
 }
 
@@ -41,11 +42,10 @@ export interface Exercice {
   programmeId: string | null;
   groupeMusculaire: GroupeMusculaire;
   prioritaire: boolean;
-  objectifId: string | null;
   ordre: number;
-  incrementKg: number;
   repPlancher: number;
   repPlafond: number;
+  typeCharge: TypeCharge;
 }
 
 export interface Serie {
@@ -63,4 +63,16 @@ export interface CibleAuto {
   poidsCible: number;
   repsCible: number;
   justification: string;
+}
+
+export type StatutSeancePlanifiee = "planifiee" | "realisee";
+
+export interface SeancePlanifiee {
+  id: string;
+  date: string;
+  nom: string;
+  disciplineId: string | null;
+  exerciceIds: string[];
+  statut: StatutSeancePlanifiee;
+  source: string; // "manuel" | "ia" (Phase 4)
 }

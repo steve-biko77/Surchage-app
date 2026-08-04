@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const { id, prioritaire, objectifId } = await req.json();
-  const row = await exercicesRepository.togglePrioritaire(id, prioritaire, objectifId ?? null);
+  const { id, prioritaire } = await req.json();
+  const row = await exercicesRepository.togglePrioritaire(id, prioritaire);
   return NextResponse.json(row);
 }

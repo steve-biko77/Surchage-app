@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, Target, Flame, LineChart } from "lucide-react";
+import { Dumbbell, Target, Flame, LineChart, ClipboardList } from "lucide-react";
 
 const ITEMS = [
   { href: "/", label: "Séance", Icon: Dumbbell },
+  { href: "/entrainements", label: "Entraîn.", Icon: ClipboardList },
   { href: "/objectifs", label: "Objectifs", Icon: Target },
   { href: "/calendrier", label: "Calendrier", Icon: Flame },
   { href: "/progression", label: "Progression", Icon: LineChart },

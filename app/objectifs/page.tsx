@@ -1,25 +1,28 @@
 export const dynamic = "force-dynamic";
 
-import { objectifsRepository, exercicesRepository, seriesRepository } from "@/lib/adapters/repositories";
+import { objectifsRepository, exercicesRepository, seriesRepository, objectifsExercicesRepository } from "@/lib/adapters/repositories";
 import { calculerProgressionObjectifPerformance } from "@/lib/domain/services";
 import ObjectifsClient from "@/components/ObjectifsClient";
 
 export default async function ObjectifsPage() {
-  const [objectifs, exercices] = await Promise.all([
+  const [objectifs, exercices, tousLesLiens] = await Promise.all([
     objectifsRepository.all(),
     exercicesRepository.all(),
+    objectifsExercicesRepository.all(),
   ]);
 
   const objectifsAvecProgression = await Promise.all(
     objectifs.map(async (o) => {
       const type = o.type === "performance" ? ("performance" as const) : ("temps" as const);
-      if (type !== "performance" || !o.exerciceId || !o.poidsCible) {
-        return { ...o, type, progressionPerformance: null, meilleurPoids: null };
+      const exerciceIds = tousLesLiens.filter((l) => l.objectifId === o.id).map((l) => l.exerciceId);
+
+      if (type !== "performance" || exerciceIds.length === 0 || !o.poidsCible) {
+        return { ...o, type, exerciceIds, progressionPerformance: null, meilleurPoids: null };
       }
-      const seriesExo = await seriesRepository.parExercice(o.exerciceId);
-      const progressionPerformance = calculerProgressionObjectifPerformance(seriesExo, o.poidsCible);
-      const meilleurPoids = seriesExo.reduce((max, s) => Math.max(max, s.poids), 0);
-      return { ...o, type, progressionPerformance, meilleurPoids };
+      const seriesLiees = await seriesRepository.parExercices(exerciceIds);
+      const progressionPerformance = calculerProgressionObjectifPerformance(seriesLiees, o.poidsCible);
+      const meilleurPoids = seriesLiees.reduce((max, s) => Math.max(max, s.poids), 0);
+      return { ...o, type, exerciceIds, progressionPerformance, meilleurPoids };
     })
   );
 
