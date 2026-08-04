@@ -1,15 +1,28 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Flame, Minus } from "lucide-react";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 
-const FLAME_ICON = ["—", "🔥", "🔥🔥", "🔥🔥🔥"];
 const JOURS = ["L", "M", "M", "J", "V", "S", "D"];
+const CELL_STYLES = [
+  "bg-[var(--bg-card)]",
+  "bg-[#2a2210]",
+  "bg-[#3a2410]",
+  "bg-[#4a2308] shadow-[0_0_8px_rgba(255,90,31,0.35)]",
+];
 
 export default function CalendrierClient() {
   const [flammes, setFlammes] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
   const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
 
   useEffect(() => {
-    fetch("/api/calendrier").then((r) => r.json()).then((data) => setFlammes(data.flammesParJour ?? {}));
+    setLoading(true);
+    fetch("/api/calendrier").then((r) => r.json()).then((data) => {
+      setFlammes(data.flammesParJour ?? {});
+      setLoading(false);
+    });
   }, []);
 
   const year = cursor.getFullYear();
@@ -24,23 +37,34 @@ export default function CalendrierClient() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setCursor(new Date(year, month - 1, 1))} className="w-8 h-8 rounded bg-[#22242c] border border-[#3a3e4a]">‹</button>
-        <span className="text-sm font-bold uppercase tracking-wide capitalize">{label}</span>
-        <button onClick={() => setCursor(new Date(year, month + 1, 1))} className="w-8 h-8 rounded bg-[#22242c] border border-[#3a3e4a]">›</button>
+      <div className="mb-4 flex items-center justify-between">
+        <Button variant="outline" size="icon" onClick={() => setCursor(new Date(year, month - 1, 1))} aria-label="Mois précédent">
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="font-heading text-base font-bold uppercase tracking-wide capitalize">{label}</span>
+        <Button variant="outline" size="icon" onClick={() => setCursor(new Date(year, month + 1, 1))} aria-label="Mois suivant">
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
-      <div className="grid grid-cols-7 gap-1.5">
-        {JOURS.map((j, i) => <div key={i} className="text-center text-[9px] text-[#8b8d98] uppercase">{j}</div>)}
+      <div className="grid grid-cols-7 gap-1.5" aria-busy={loading}>
+        {JOURS.map((j, i) => <div key={i} className="text-center text-[9px] uppercase text-[var(--grey)]">{j}</div>)}
         {cells.map((d, i) => {
           if (!d) return <div key={i} />;
           const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
           const niveau = flammes[iso] ?? 0;
           const isToday = iso === today;
           return (
-            <div key={i} className={`aspect-square rounded-lg flex flex-col items-center justify-center text-[10px] ${niveau === 3 ? "bg-[#4a2308] shadow-[0_0_8px_rgba(255,90,31,0.35)]" : niveau === 2 ? "bg-[#3a2410]" : niveau === 1 ? "bg-[#2a2210]" : "bg-[#1b1d23]"} ${isToday ? "border border-[#FF5A1F]" : ""}`}>
-              <span>{FLAME_ICON[niveau]}</span>
-              <span className="text-[#8b8d98]">{d}</span>
-            </div>
+            <Card
+              key={i}
+              className={`flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] ${CELL_STYLES[niveau]} ${isToday ? "border-[#FF5A1F]" : "border-transparent"}`}
+            >
+              {niveau === 0 ? (
+                <Minus className="h-3 w-3 text-[var(--grey)]/50" aria-hidden="true" />
+              ) : (
+                <Flame className="h-3 w-3 text-[#FF5A1F]" fill="#FF5A1F" aria-hidden="true" />
+              )}
+              <span className="text-[var(--grey)]">{d}</span>
+            </Card>
           );
         })}
       </div>
