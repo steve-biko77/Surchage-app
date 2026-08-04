@@ -2,7 +2,7 @@
 // Aucune de ces fonctions ne touche la base de donnees ni le DOM : elles prennent
 // des donnees deja chargees et retournent un resultat calcule.
 
-import type { Serie, CibleAuto, JourSemaine } from "./types";
+import type { Serie, CibleAuto, JourSemaine, GroupeMusculaire } from "./types";
 
 const JOURS: JourSemaine[] = [
   "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi",
@@ -17,24 +17,32 @@ export function todayISO(date: Date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** incrementParDefaut - les exercices a la poulie/machine cablee progressent par pas de 5kg */
-export function incrementParDefaut(nomExercice: string): number {
-  return nomExercice.toLowerCase().includes("poulie") ? 5 : 2;
-}
+/** Increment de charge par defaut selon le type de materiel utilise pour l'exercice */
+export const INCREMENT_PAR_TYPE: Record<string, number> = {
+  haltere: 2,
+  poulie: 5,
+  barre: 5,
+  poids_du_corps: 0,
+};
 
 /**
  * calculerCibleAuto - chapitre V, 5.5
  * Double progression : on gagne des reps a charge fixe jusqu'a repPlafond,
- * puis on monte le poids de incrementKg et on redescend a repPlancher.
+ * puis on monte le poids (selon typeCharge) et on redescend a repPlancher.
  * En cas d'echec (note "echec" ou reps < repPlancher), on stabilise la charge actuelle.
+ * Pour les exercices au poids du corps, le plafond de reps declenche l'ajout d'une
+ * serie plutot qu'une augmentation de charge (il n'y a pas de charge a augmenter).
  */
 export function calculerCibleAuto(
   dernieresSeries: Serie[],
-  exercice: { incrementKg: number; repPlancher: number; repPlafond: number }
+  exercice: { typeCharge: string; repPlancher: number; repPlafond: number }
 ): CibleAuto | null {
   if (dernieresSeries.length === 0) return null;
   const sorted = [...dernieresSeries].sort((a, b) => a.date.localeCompare(b.date));
   const derniere = sorted[sorted.length - 1];
+  const auPoidsDuCorps = exercice.typeCharge === "poids_du_corps";
+  const increment = INCREMENT_PAR_TYPE[exercice.typeCharge] ?? 2;
+
   const echec =
     derniere.note?.toLowerCase().includes("échec") ||
     derniere.note?.toLowerCase().includes("echec") ||
@@ -47,6 +55,7 @@ export function calculerCibleAuto(
       justification: "Stabilise a la charge actuelle avant de reprogresser.",
     };
   }
+
   if (derniere.reps < exercice.repPlafond) {
     return {
       poidsCible: derniere.poids,
@@ -54,10 +63,19 @@ export function calculerCibleAuto(
       justification: `Meme charge, +1 repetition (double progression, plafond ${exercice.repPlafond}).`,
     };
   }
+
+  // Plafond de reps atteint
+  if (auPoidsDuCorps) {
+    return {
+      poidsCible: 0,
+      repsCible: exercice.repPlancher,
+      justification: "Plafond de reps atteint -> ajoute une serie plutot qu'un poids (exercice au poids du corps).",
+    };
+  }
   return {
-    poidsCible: Math.round((derniere.poids + exercice.incrementKg) * 2) / 2,
+    poidsCible: Math.round((derniere.poids + increment) * 2) / 2,
     repsCible: exercice.repPlancher,
-    justification: `Plafond de ${exercice.repPlafond} reps atteint -> +${exercice.incrementKg}kg, reps repartent a ${exercice.repPlancher}.`,
+    justification: `Plafond atteint -> +${increment}kg, reps repartent a ${exercice.repPlancher}.`,
   };
 }
 
@@ -94,7 +112,11 @@ export function calculerCoherence(joursActifs: number, joursPrevus: number): num
   return Math.round((joursActifs / joursPrevus) * 100);
 }
 
-/** calculerProgressionObjectifPerformance - % d'atteinte d'un objectif "performance", depuis l'historique reel */
+/**
+ * calculerProgressionObjectifPerformance - % d'atteinte d'un objectif "performance".
+ * seriesExercice peut regrouper les series de PLUSIEURS exercices lies a l'objectif
+ * (relation plusieurs-a-plusieurs) : on retient le meilleur poids atteint tous confondus.
+ */
 export function calculerProgressionObjectifPerformance(
   seriesExercice: Serie[],
   poidsCible: number
@@ -102,4 +124,74 @@ export function calculerProgressionObjectifPerformance(
   const meilleurPoids = seriesExercice.reduce((max, s) => Math.max(max, s.poids), 0);
   if (poidsCible <= 0) return 0;
   return Math.min(100, Math.round((meilleurPoids / poidsCible) * 100));
+}
+
+/** Zone corporelle regroupant les groupes musculaires - pour le libelle de dominante */
+const ZONE_PAR_GROUPE: Record<GroupeMusculaire, string> = {
+  dos: "haut du corps",
+  pectoraux: "haut du corps",
+  epaules: "haut du corps",
+  biceps: "bras",
+  triceps: "bras",
+  "avant-bras": "bras",
+  jambes: "jambes",
+  mollets: "jambes",
+  abdominaux: "core",
+};
+
+function capitaliser(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export interface ResumeSeance {
+  nbExercicesDistincts: number;
+  nbSeries: number;
+  nbReps: number;
+  tempsEstimeMin: number;
+  dominante: string | null;
+}
+
+/**
+ * calculerResumeSeance - cumul de la seance du jour (reelle) + libelle de dominante.
+ * Le libelle combine la zone majoritaire et, si un groupe musculaire precis depasse
+ * 40% du volume total (en series), sa propre dominante au sein de sa zone.
+ */
+export function calculerResumeSeance(
+  seriesAujourdhui: Array<{ exerciceId: string; sets: number; reps: number }>,
+  groupeParExercice: Record<string, string>
+): ResumeSeance {
+  const nbExercicesDistincts = new Set(seriesAujourdhui.map((s) => s.exerciceId)).size;
+  const nbSeries = seriesAujourdhui.reduce((sum, s) => sum + s.sets, 0);
+  const nbReps = seriesAujourdhui.reduce((sum, s) => sum + s.sets * s.reps, 0);
+  const tempsEstimeMin = Math.round(nbSeries * 1.5);
+
+  if (nbSeries === 0) {
+    return { nbExercicesDistincts, nbSeries, nbReps, tempsEstimeMin, dominante: null };
+  }
+
+  const setsParGroupe: Record<string, number> = {};
+  for (const s of seriesAujourdhui) {
+    const groupe = groupeParExercice[s.exerciceId];
+    if (!groupe) continue;
+    setsParGroupe[groupe] = (setsParGroupe[groupe] ?? 0) + s.sets;
+  }
+
+  const setsParZone: Record<string, number> = {};
+  for (const [groupe, sets] of Object.entries(setsParGroupe)) {
+    const zone = ZONE_PAR_GROUPE[groupe as GroupeMusculaire];
+    setsParZone[zone] = (setsParZone[zone] ?? 0) + (sets ?? 0);
+  }
+  const [zoneMajoritaire] = Object.entries(setsParZone).sort((a, b) => b[1] - a[1])[0];
+
+  const groupesDeLaZone = Object.entries(setsParGroupe).filter(
+    ([groupe]) => ZONE_PAR_GROUPE[groupe as GroupeMusculaire] === zoneMajoritaire
+  );
+  const [groupeDominant, setsDominant] = groupesDeLaZone.sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))[0] ?? [null, 0];
+
+  const sousDominante = groupeDominant && (setsDominant ?? 0) / nbSeries > 0.4 ? groupeDominant : null;
+  const dominante = sousDominante
+    ? `${capitaliser(zoneMajoritaire)} - dominante ${sousDominante}`
+    : capitaliser(zoneMajoritaire);
+
+  return { nbExercicesDistincts, nbSeries, nbReps, tempsEstimeMin, dominante };
 }

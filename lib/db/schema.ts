@@ -1,4 +1,4 @@
-import { pgTable, text, real, integer, boolean, timestamp, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, text, real, integer, boolean, timestamp, uuid, primaryKey } from "drizzle-orm/pg-core";
 
 // --- Coeur de domaine : schema de persistance (adapter Postgres) ---
 // Chaque table correspond a une entite du diagramme de classes (chapitre IV, Figure 1)
@@ -18,7 +18,6 @@ export const objectifs = pgTable("objectifs", {
   deadline: text("deadline"), // ISO date string, nullable
   createdAt: timestamp("created_at").defaultNow(),
   type: text("type").notNull().default("temps"), // "temps" | "performance"
-  exerciceId: uuid("exercice_id").references((): AnyPgColumn => exercices.id),
   poidsCible: real("poids_cible"),
 });
 
@@ -35,12 +34,20 @@ export const exercices = pgTable("exercices", {
   programmeId: uuid("programme_id").references(() => programmes.id),
   groupeMusculaire: text("groupe_musculaire").notNull(), // dos, biceps, triceps, epaules, pectoraux, jambes, avant-bras, abdominaux, mollets
   prioritaire: boolean("prioritaire").notNull().default(false),
-  objectifId: uuid("objectif_id").references(() => objectifs.id),
   ordre: integer("ordre").notNull().default(0),
-  incrementKg: real("increment_kg").notNull().default(2),
   repPlancher: integer("rep_plancher").notNull().default(8),
   repPlafond: integer("rep_plafond").notNull().default(12),
+  typeCharge: text("type_charge").notNull().default("haltere"), // "haltere" | "poulie" | "barre" | "poids_du_corps"
 });
+
+export const objectifsExercices = pgTable(
+  "objectifs_exercices",
+  {
+    objectifId: uuid("objectif_id").references(() => objectifs.id).notNull(),
+    exerciceId: uuid("exercice_id").references(() => exercices.id).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.objectifId, table.exerciceId] })]
+);
 
 export const series = pgTable("series", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -58,4 +65,14 @@ export const objectifsDuJour = pgTable("objectifs_du_jour", {
   id: uuid("id").defaultRandom().primaryKey(),
   date: text("date").notNull(),
   texte: text("texte").notNull(),
+});
+
+export const seancesPlanifiees = pgTable("seances_planifiees", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  date: text("date").notNull(),
+  nom: text("nom").notNull(),
+  disciplineId: uuid("discipline_id").references(() => disciplines.id),
+  exerciceIds: text("exercice_ids").notNull(), // JSON.stringify(string[]), ordre inclus
+  statut: text("statut").notNull().default("planifiee"), // "planifiee" | "realisee"
+  source: text("source").notNull().default("manuel"), // "manuel" | "ia" (Phase 4)
 });

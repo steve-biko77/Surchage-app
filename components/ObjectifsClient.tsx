@@ -16,7 +16,7 @@ type Objectif = {
   minutesInvesties: number;
   deadline: string | null;
   type: TypeObjectif;
-  exerciceId: string | null;
+  exerciceIds: string[];
   poidsCible: number | null;
   progressionPerformance: number | null;
   meilleurPoids: number | null;
@@ -36,14 +36,18 @@ export default function ObjectifsClient({
   const [nom, setNom] = useState("");
   const [heures, setHeures] = useState(50);
   const [deadline, setDeadline] = useState("");
-  const [exerciceId, setExerciceId] = useState(exercices[0]?.id ?? "");
+  const [exerciceIds, setExerciceIds] = useState<string[]>([]);
   const [poidsCible, setPoidsCible] = useState(50);
   const [saving, setSaving] = useState(false);
+
+  function toggleExercice(id: string) {
+    setExerciceIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   async function creer() {
     if (!nom) return;
     if (type === "temps" && !heures) return;
-    if (type === "performance" && (!exerciceId || !poidsCible)) return;
+    if (type === "performance" && (exerciceIds.length === 0 || !poidsCible)) return;
 
     setSaving(true);
     await fetch("/api/objectifs", {
@@ -52,13 +56,14 @@ export default function ObjectifsClient({
       body: JSON.stringify(
         type === "temps"
           ? { nom, disciplineId: null, heuresCible: heures, deadline: deadline || null, type }
-          : { nom, disciplineId: null, deadline: deadline || null, type, exerciceId, poidsCible }
+          : { nom, disciplineId: null, deadline: deadline || null, type, exerciceIds, poidsCible }
       ),
     });
     setNom("");
     setHeures(50);
     setDeadline("");
     setPoidsCible(50);
+    setExerciceIds([]);
     setSaving(false);
     router.refresh();
   }
@@ -80,7 +85,10 @@ export default function ObjectifsClient({
 
       {initialObjectifs.map((o) => {
         if (o.type === "performance") {
-          const exo = exercices.find((e) => e.id === o.exerciceId);
+          const nomsExercices = o.exerciceIds
+            .map((id) => exercices.find((e) => e.id === id)?.nom)
+            .filter(Boolean)
+            .join(", ");
           const pct = o.progressionPerformance ?? 0;
           const atteint = pct >= 100;
           return (
@@ -92,7 +100,7 @@ export default function ObjectifsClient({
                       <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[#3B82C4]" aria-hidden="true" />
                       <h3 className="truncate font-heading font-bold">{o.nom}</h3>
                     </div>
-                    <p className="text-[10px] uppercase tracking-wide text-[var(--grey)]">{exo?.nom ?? "Exercice"}</p>
+                    <p className="truncate text-[10px] uppercase tracking-wide text-[var(--grey)]">{nomsExercices || "Exercice"}</p>
                   </div>
                   {atteint ? (
                     <Badge variant="success"><Sparkles className="h-3 w-3" />Atteint</Badge>
@@ -179,20 +187,31 @@ export default function ObjectifsClient({
               </div>
             </div>
           ) : (
-            <div className="mb-3 flex gap-2">
-              <div className="flex-1">
-                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="obj-exercice">Exercice</label>
-                <select id="obj-exercice" value={exerciceId} onChange={(e) => setExerciceId(e.target.value)} className="w-full text-sm">
-                  {exercices.length === 0 && <option value="">Aucun exercice</option>}
-                  {exercices.map((e) => (
-                    <option key={e.id} value={e.id}>{e.nom}</option>
-                  ))}
-                </select>
+            <div className="mb-3">
+              <label className="text-[10px] uppercase text-[var(--grey)]">Exercices liés (un ou plusieurs)</label>
+              <div className="mb-2 max-h-36 overflow-y-auto rounded-lg border border-[var(--steel)] p-1.5">
+                {exercices.length === 0 && <p className="p-2 text-xs text-[var(--grey)]">Aucun exercice</p>}
+                {exercices.map((e) => {
+                  const checked = exerciceIds.includes(e.id);
+                  return (
+                    <label
+                      key={e.id}
+                      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${checked ? "bg-[#122233] text-[#3B82C4]" : "text-[var(--chalk)]"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleExercice(e.id)}
+                        className="h-4 w-4 shrink-0 accent-[#3B82C4]"
+                        style={{ minHeight: 0 }}
+                      />
+                      {e.nom}
+                    </label>
+                  );
+                })}
               </div>
-              <div className="flex-1">
-                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="obj-poids">Poids cible (kg)</label>
-                <input id="obj-poids" type="number" step="0.5" inputMode="decimal" value={poidsCible} onChange={(e) => setPoidsCible(parseFloat(e.target.value) || 0)} className="w-full text-sm" />
-              </div>
+              <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="obj-poids">Poids cible (kg)</label>
+              <input id="obj-poids" type="number" step="0.5" inputMode="decimal" value={poidsCible} onChange={(e) => setPoidsCible(parseFloat(e.target.value) || 0)} className="w-full text-sm" />
             </div>
           )}
 
