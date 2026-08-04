@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { seriesRepository } from "@/lib/adapters/repositories";
 import { calculerNiveauFlamme } from "@/lib/domain/services";

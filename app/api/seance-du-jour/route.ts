@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { programmesRepository, exercicesRepository, seriesRepository, objectifsDuJourRepository } from "@/lib/adapters/repositories";
 import { jourDeLaSemaine, todayISO, calculerCibleAuto, calculerNiveauFlamme } from "@/lib/domain/services";
