@@ -4,10 +4,10 @@
 import { db } from "../db/client";
 import {
   disciplines, objectifs, programmes, exercices, series, objectifsDuJour,
-  objectifsExercices, seancesPlanifiees,
+  objectifsExercices, seancesPlanifiees, exercicesMuscles,
 } from "../db/schema";
 import { eq, inArray, and, gte, lte } from "drizzle-orm";
-import type { JourSemaine, StatutSeancePlanifiee } from "../domain/types";
+import type { JourSemaine, StatutSeancePlanifiee, MuscleDetail, RoleMuscle } from "../domain/types";
 
 export const disciplinesRepository = {
   async all() {
@@ -151,6 +151,22 @@ export const objectifsExercicesRepository = {
     await db.delete(objectifsExercices).where(eq(objectifsExercices.objectifId, objectifId));
     if (exerciceIds.length === 0) return;
     await db.insert(objectifsExercices).values(exerciceIds.map((exerciceId) => ({ objectifId, exerciceId })));
+  },
+};
+
+/** Detail des muscles primaires/secondaires travailles par exercice (fiche exercice) */
+export const exercicesMusclesRepository = {
+  async all() {
+    return db.select().from(exercicesMuscles);
+  },
+  async parExercice(exerciceId: string) {
+    return db.select().from(exercicesMuscles).where(eq(exercicesMuscles.exerciceId, exerciceId));
+  },
+  /** Remplace l'integralite du detail musculaire d'un exercice */
+  async setPourExercice(exerciceId: string, muscles: Array<{ muscle: MuscleDetail; role: RoleMuscle }>) {
+    await db.delete(exercicesMuscles).where(eq(exercicesMuscles.exerciceId, exerciceId));
+    if (muscles.length === 0) return;
+    await db.insert(exercicesMuscles).values(muscles.map((m) => ({ exerciceId, muscle: m.muscle, role: m.role })));
   },
 };
 

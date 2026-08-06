@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Flame, Minus, CalendarClock } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { todayISO } from "@/lib/domain/services";
 
 const JOURS = ["L", "M", "M", "J", "V", "S", "D"];
 const JOURS_COURTS = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
@@ -15,13 +16,20 @@ const CELL_STYLES = [
 
 type SeancePlanifiee = { id: string; date: string; nom: string; statut: "planifiee" | "realisee" };
 
-function addDays(base: Date, n: number) {
-  const d = new Date(base);
-  d.setDate(base.getDate() + n);
-  return d;
+/**
+ * Avance en arithmetique UTC pure a partir d'une date ISO deja resolue en heure
+ * locale France (todayISO) - cf. bug H, aucune conversion de fuseau supplementaire
+ * n'entre en jeu ensuite donc pas de risque de decalage sur les jours suivants.
+ */
+function addJoursISO(iso: string, n: number) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + n);
+  return date;
 }
-function toISO(d: Date) {
-  return d.toISOString().slice(0, 10);
+/** Compose une date ISO a partir de composants calendaires locaux, sans passer par toISOString (evite toute conversion de fuseau parasite sur une date "murale" pure). */
+function isoFromYMD(y: number, m: number, d: number) {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
 export default function CalendrierClient() {
@@ -32,10 +40,11 @@ export default function CalendrierClient() {
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
-  const today = toISO(new Date());
-  const dansQuatorzeJours = toISO(addDays(new Date(), 13));
-  const finDuMois = toISO(new Date(year, month + 1, 0));
-  const debutDuMois = toISO(new Date(year, month, 1));
+  const today = todayISO();
+  const dansQuatorzeJours = addJoursISO(today, 13).toISOString().slice(0, 10);
+  const dernierJourDuMois = new Date(year, month + 1, 0).getDate();
+  const finDuMois = isoFromYMD(year, month + 1, dernierJourDuMois);
+  const debutDuMois = isoFromYMD(year, month + 1, 1);
 
   useEffect(() => {
     setLoading(true);
@@ -63,9 +72,8 @@ export default function CalendrierClient() {
   const cells: (number | null)[] = [...Array(startOffset).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
 
   const prochains = Array.from({ length: 14 }, (_, i) => {
-    const d = addDays(new Date(), i);
-    const iso = toISO(d);
-    return { iso, label: JOURS_COURTS[d.getDay()], numero: d.getDate(), estAujourdhui: i === 0 };
+    const d = addJoursISO(today, i);
+    return { iso: d.toISOString().slice(0, 10), label: JOURS_COURTS[d.getUTCDay()], numero: d.getUTCDate(), estAujourdhui: i === 0 };
   });
 
   return (

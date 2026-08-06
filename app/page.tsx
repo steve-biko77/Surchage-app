@@ -40,17 +40,20 @@ export default async function SeanceDuJourPage() {
   const seriesAujourdhui = toutesSeries.filter((s) => s.date === today);
   const resume = calculerResumeSeance(seriesAujourdhui, groupeParExercice);
 
-  // Priorite a une seance planifiee non encore realisee pour aujourd'hui (scenario B4)
-  const seancePlanifiee = seancesDuJour.find((s) => s.statut === "planifiee") ?? null;
+  // La seance du jour se resout UNIQUEMENT sur la date (scenario B4) : le statut
+  // planifiee/realisee ne sert qu'a l'affichage du calendrier, jamais a decider
+  // quelle seance charger — sinon la seance change sous les pieds de l'utilisateur
+  // des que la 1ere serie bascule le statut en "realisee" (bug H).
+  const seanceDuJour = seancesDuJour[0] ?? null;
 
   let nomSeance: string;
   let exosOrdonnes: typeof tousExercices;
   let estPlanifiee = false;
 
-  if (seancePlanifiee) {
-    nomSeance = seancePlanifiee.nom;
+  if (seanceDuJour) {
+    nomSeance = seanceDuJour.nom;
     estPlanifiee = true;
-    exosOrdonnes = seancePlanifiee.exerciceIds
+    exosOrdonnes = seanceDuJour.exerciceIds
       .map((id) => exoParId.get(id))
       .filter((e): e is NonNullable<typeof e> => Boolean(e));
   } else {
@@ -78,7 +81,7 @@ export default async function SeanceDuJourPage() {
     exosOrdonnes.map(async (exo) => {
       const historique = await seriesRepository.parExercice(exo.id);
       const cible = calculerCibleAuto(historique, exo);
-      const seriesAujourdhuiExo = historique.filter((s) => s.date === today).map((s) => ({ id: s.id, poids: s.poids, reps: s.reps, sets: s.sets }));
+      const seriesAujourdhuiExo = historique.filter((s) => s.date === today).map((s) => ({ id: s.id, poids: s.poids, reps: s.reps, sets: s.sets, note: s.note }));
       return { ...exo, cible, seriesAujourdhui: seriesAujourdhuiExo };
     })
   );

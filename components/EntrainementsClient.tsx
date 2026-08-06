@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Search, Plus, X, ChevronUp, ChevronDown, Save, Trash2, GripVertical, CalendarPlus, Check,
 } from "lucide-react";
@@ -8,6 +9,7 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import MuscleSilhouette from "./MuscleSilhouette";
+import { todayISO } from "@/lib/domain/services";
 
 type Exercice = {
   id: string;
@@ -31,16 +33,22 @@ const TYPES_CHARGE = [
 const MODELES_KEY = "surcharge_modeles_seance";
 const JOURS_COURTS = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
 
+/**
+ * Ancre sur todayISO() (heure locale France, cf. bug H) puis avance en arithmetique
+ * UTC pure a partir de ce point - aucune conversion de fuseau supplementaire n'entre
+ * en jeu, donc aucun risque de decalage sur les jours suivants.
+ */
 function prochainsJours(n: number) {
+  const [y, m, d] = todayISO().split("-").map(Number);
+  const base = new Date(Date.UTC(y, m - 1, d));
   const jours = [];
-  const base = new Date();
   for (let i = 0; i < n; i++) {
-    const d = new Date(base);
-    d.setDate(base.getDate() + i);
+    const jour = new Date(base);
+    jour.setUTCDate(base.getUTCDate() + i);
     jours.push({
-      iso: d.toISOString().slice(0, 10),
-      label: JOURS_COURTS[d.getDay()],
-      numero: d.getDate(),
+      iso: jour.toISOString().slice(0, 10),
+      label: JOURS_COURTS[jour.getUTCDay()],
+      numero: jour.getUTCDate(),
       estAujourdhui: i === 0,
     });
   }
@@ -54,9 +62,8 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
   const [composition, setComposition] = useState<string[]>([]);
   const [nomSeance, setNomSeance] = useState("");
   const [modeles, setModeles] = useState<Modele[]>([]);
-  const [dragActive, setDragActive] = useState(false);
-  const [dropCibleIso, setDropCibleIso] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [planificationEnCours, setPlanificationEnCours] = useState<string | null>(null);
   const [showNouvelExercice, setShowNouvelExercice] = useState(false);
   const [nomExo, setNomExo] = useState("");
   const [groupeExo, setGroupeExo] = useState(GROUPES[0]);
@@ -118,15 +125,29 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
   }
 
   async function planifier(iso: string) {
-    if (composition.length === 0) return;
-    await fetch("/api/seances-planifiees", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: iso, nom: nomSeance || "Séance", exerciceIds: composition }),
-    });
-    setConfirmation(`Planifiée pour le ${iso}.`);
-    setTimeout(() => setConfirmation(null), 2500);
-    router.refresh();
+    if (composition.length === 0 || planificationEnCours) return;
+    setPlanificationEnCours(iso);
+    try {
+      const res = await fetch("/api/seances-planifiees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: iso, nom: nomSeance || "Séance", exerciceIds: composition }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setConfirmation(`Échec de la planification : ${body.error ?? res.status}`);
+        setTimeout(() => setConfirmation(null), 4000);
+        return;
+      }
+      setConfirmation(`Planifiée pour le ${iso}.`);
+      setTimeout(() => setConfirmation(null), 2500);
+      router.refresh();
+    } catch {
+      setConfirmation("Échec de la planification : réseau indisponible.");
+      setTimeout(() => setConfirmation(null), 4000);
+    } finally {
+      setPlanificationEnCours(null);
+    }
   }
 
   async function creerExercice() {
@@ -157,12 +178,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
       )}
 
       {/* Seance en cours */}
-      <Card
-        className={`mb-4 border-[#3B82C4]/40 transition-shadow ${dragActive ? "ring-2 ring-[#3B82C4]" : ""}`}
-        draggable={composition.length > 0}
-        onDragStart={() => setDragActive(true)}
-        onDragEnd={() => { setDragActive(false); setDropCibleIso(null); }}
-      >
+      <Card className="mb-4 border-[#3B82C4]/40">
         <CardContent className="pt-4">
           <label className="sr-only" htmlFor="nom-seance">Nom de la séance</label>
           <input
@@ -214,7 +230,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
             </div>
           )}
           <p className="mt-2 text-[10px] text-[var(--grey)]">
-            <GripVertical className="mb-0.5 inline h-3 w-3" aria-hidden="true" /> Glisse cette carte sur un jour ci-dessous (souris), ou touche directement un jour pour planifier.
+            Touche un jour ci-dessous pour planifier cette séance.
           </p>
         </CardContent>
       </Card>
@@ -244,17 +260,17 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
             <button
               key={j.iso}
               type="button"
-              disabled={composition.length === 0}
+              disabled={composition.length === 0 || planificationEnCours === j.iso}
               onClick={() => planifier(j.iso)}
-              onDragOver={(e) => { e.preventDefault(); setDropCibleIso(j.iso); }}
-              onDragLeave={() => setDropCibleIso((cur) => (cur === j.iso ? null : cur))}
-              onDrop={(e) => { e.preventDefault(); planifier(j.iso); setDragActive(false); setDropCibleIso(null); }}
-              className={`flex h-16 w-12 shrink-0 flex-col items-center justify-center rounded-xl border text-xs transition-colors disabled:opacity-40 ${
-                dropCibleIso === j.iso ? "border-[#3B82C4] bg-[#122233]" : "border-[var(--card-border)] bg-[var(--bg-card)]"
-              } ${j.estAujourdhui ? "border-[#FF5A1F]/60" : ""}`}
+              style={{ touchAction: "manipulation" }}
+              className={`flex h-16 w-12 shrink-0 flex-col items-center justify-center rounded-xl border text-xs transition-colors disabled:opacity-40 active:scale-95 border-[var(--card-border)] bg-[var(--bg-card)] ${
+                j.estAujourdhui ? "border-[#FF5A1F]/60" : ""
+              }`}
             >
               <span className="uppercase text-[var(--grey)]">{j.label}</span>
-              <span className="font-heading text-lg font-bold">{j.numero}</span>
+              <span className="font-heading text-lg font-bold">
+                {planificationEnCours === j.iso ? "…" : j.numero}
+              </span>
             </button>
           ))}
         </div>
@@ -334,7 +350,9 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
         return (
           <Card key={e.id} className={`mb-2 ${dejaAjoute ? "border-[#FF5A1F]/50" : ""}`}>
             <div className="flex items-center gap-3 p-3">
-              <MuscleSilhouette groupe={e.groupeMusculaire} />
+              <Link href={`/exercices/${e.id}`} aria-label={`Voir la fiche de ${e.nom}`}>
+                <MuscleSilhouette groupe={e.groupeMusculaire} />
+              </Link>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">{e.nom}</p>
                 <div className="mt-1 flex gap-1.5">

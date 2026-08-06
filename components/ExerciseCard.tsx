@@ -1,14 +1,16 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Star, CheckCircle2, Target, ChevronDown, Plus } from "lucide-react";
 import MuscleSilhouette from "./MuscleSilhouette";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { todayISO } from "@/lib/domain/services";
 
 type Cible = { poidsCible: number; repsCible: number; justification: string } | null;
-type SerieDuJour = { id: string; poids: number; reps: number; sets: number };
+type SerieDuJour = { id: string; poids: number; reps: number; sets: number; note?: string | null };
 
 export default function ExerciseCard({
   exercice,
@@ -36,7 +38,7 @@ export default function ExerciseCard({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        date: new Date().toISOString().slice(0, 10),
+        date: todayISO(),
         exerciceId: exercice.id,
         poids, reps, sets, note,
       }),
@@ -53,7 +55,9 @@ export default function ExerciseCard({
     <Card className={`mb-3 overflow-hidden ${exercice.prioritaire ? "border-[#FF5A1F]/50" : ""}`}>
       {exercice.prioritaire && <div className="h-0.5 w-full bg-gradient-to-r from-[#FF5A1F] to-transparent" aria-hidden="true" />}
       <div className="flex items-start gap-3 p-4">
-        <MuscleSilhouette groupe={exercice.groupeMusculaire} />
+        <Link href={`/exercices/${exercice.id}`} aria-label={`Voir la fiche de ${exercice.nom}`}>
+          <MuscleSilhouette groupe={exercice.groupeMusculaire} />
+        </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate font-heading text-base font-bold leading-tight">{exercice.nom}</h3>
@@ -76,10 +80,15 @@ export default function ExerciseCard({
           )}
 
           {dejaFait && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-[var(--success)]">
-              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {exercice.seriesAujourdhui.map((s) => `${s.poids}kg×${s.reps}`).join(", ")}
-            </p>
+            <div className="mt-2 text-xs text-[var(--success)]">
+              <p className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {exercice.seriesAujourdhui.map((s) => `${s.poids}kg×${s.reps}`).join(", ")}
+              </p>
+              {exercice.seriesAujourdhui.filter((s) => s.note).map((s) => (
+                <p key={s.id} className="ml-5 mt-0.5 italic text-[var(--grey)]">&laquo; {s.note} &raquo;</p>
+              ))}
+            </div>
           )}
 
           <Button

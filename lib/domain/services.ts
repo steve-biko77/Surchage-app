@@ -8,13 +8,29 @@ const JOURS: JourSemaine[] = [
   "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi",
 ];
 
-/** ClockPort minimal - jour de la semaine actuel en francais */
-export function jourDeLaSemaine(date: Date = new Date()): JourSemaine {
-  return JOURS[date.getDay()];
+const FUSEAU = "Europe/Paris";
+
+/**
+ * ClockPort minimal - date du jour au format ISO (YYYY-MM-DD), toujours resolue
+ * en heure locale France quel que soit le fuseau du runtime (serveur Vercel = UTC,
+ * navigateur = fuseau du device). Deterministe : ne depend jamais du fuseau ambiant.
+ */
+export function todayISO(date: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: FUSEAU,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
-export function todayISO(date: Date = new Date()): string {
-  return date.toISOString().slice(0, 10);
+/** ClockPort minimal - jour de la semaine actuel en francais, en heure locale France */
+export function jourDeLaSemaine(date: Date = new Date()): JourSemaine {
+  const [y, m, d] = todayISO(date).split("-").map(Number);
+  const utcMidnight = new Date(Date.UTC(y, m - 1, d));
+  return JOURS[utcMidnight.getUTCDay()];
 }
 
 /** Increment de charge par defaut selon le type de materiel utilise pour l'exercice */
