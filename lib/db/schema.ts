@@ -67,6 +67,17 @@ export const objectifsDuJour = pgTable("objectifs_du_jour", {
   texte: text("texte").notNull(),
 });
 
+export const exercicesMuscles = pgTable("exercices_muscles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  exerciceId: uuid("exercice_id").references(() => exercices.id).notNull(),
+  muscle: text("muscle").notNull(),
+  // valeurs possibles, referentiel ferme :
+  // deltoide_anterieur, deltoide_lateral, deltoide_posterieur, trapeze,
+  // grand_dorsal, pectoraux, biceps, triceps, avant_bras, abdominaux,
+  // quadriceps, ischio_jambiers, fessiers, mollets
+  role: text("role").notNull(), // "primaire" | "secondaire"
+});
+
 export const seancesPlanifiees = pgTable("seances_planifiees", {
   id: uuid("id").defaultRandom().primaryKey(),
   date: text("date").notNull(),

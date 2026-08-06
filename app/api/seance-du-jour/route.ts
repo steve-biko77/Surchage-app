@@ -26,15 +26,17 @@ export async function GET() {
     groupeParExercice
   );
 
-  const seancePlanifiee = seancesDuJour.find((s) => s.statut === "planifiee") ?? null;
+  // Resolution UNIQUEMENT par date, jamais par statut (bug H) : le statut
+  // planifiee/realisee ne pilote que l'affichage du calendrier.
+  const seanceDuJour = seancesDuJour[0] ?? null;
 
   let nomSeance: string | null = null;
   let exosOrdonnes: typeof tousExercices = [];
-  const estPlanifiee = Boolean(seancePlanifiee);
+  const estPlanifiee = Boolean(seanceDuJour);
 
-  if (seancePlanifiee) {
-    nomSeance = seancePlanifiee.nom;
-    exosOrdonnes = seancePlanifiee.exerciceIds
+  if (seanceDuJour) {
+    nomSeance = seanceDuJour.nom;
+    exosOrdonnes = seanceDuJour.exerciceIds
       .map((id) => exoParId.get(id))
       .filter((e): e is NonNullable<typeof e> => Boolean(e));
   } else {

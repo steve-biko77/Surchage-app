@@ -65,6 +65,19 @@ export interface CibleAuto {
   justification: string;
 }
 
+export type MuscleDetail =
+  | "deltoide_anterieur" | "deltoide_lateral" | "deltoide_posterieur" | "trapeze"
+  | "grand_dorsal" | "pectoraux" | "biceps" | "triceps" | "avant_bras" | "abdominaux"
+  | "quadriceps" | "ischio_jambiers" | "fessiers" | "mollets";
+
+export type RoleMuscle = "primaire" | "secondaire";
+
+export interface ExerciceMuscle {
+  exerciceId: string;
+  muscle: MuscleDetail;
+  role: RoleMuscle;
+}
+
 export type StatutSeancePlanifiee = "planifiee" | "realisee";
 
 export interface SeancePlanifiee {
