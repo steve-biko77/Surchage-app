@@ -7,11 +7,14 @@ import {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { date, exerciceId, poids, reps, sets, note } = body;
-  if (!date || !exerciceId || !reps || !sets) {
-    return NextResponse.json({ error: "date, exerciceId, reps et sets sont requis" }, { status: 400 });
+  const { date, exerciceId, poids, reps, sets, dureeSecondes, note } = body;
+  if (!date || !exerciceId || !sets || (dureeSecondes == null && !reps)) {
+    return NextResponse.json({ error: "date, exerciceId, sets et (reps ou dureeSecondes) sont requis" }, { status: 400 });
   }
-  const row = await seriesRepository.create({ date, exerciceId, poids: poids ?? 0, reps, sets, note: note ?? "" });
+  const row = await seriesRepository.create({
+    date, exerciceId, poids: poids ?? 0, reps: reps ?? 0, sets,
+    dureeSecondes: dureeSecondes ?? null, note: note ?? "",
+  });
 
   // Incrementer les objectifs "temps" lies si l'exercice est priorise (Figure 5 / 5 bis)
   const exo = await exercicesRepository.parId(exerciceId);

@@ -42,16 +42,35 @@ export default async function FicheExercicePage({ params }: { params: Promise<{ 
 
       <MuscleMapDetail muscles={muscles.map((m) => ({ muscle: m.muscle as MuscleDetail, role: m.role as RoleMuscle }))} />
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
-          <div className="font-heading text-lg font-black">{exercice.repPlancher}</div>
-          <div className="text-[10px] uppercase text-[var(--grey)]">Reps plancher</div>
+      {exercice.uniteMesure === "duree" ? (
+        exercice.dureePlancherSec != null && exercice.dureePlafondSec != null ? (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
+              <div className="font-heading text-lg font-black">{exercice.dureePlancherSec}s</div>
+              <div className="text-[10px] uppercase text-[var(--grey)]">Durée plancher</div>
+            </div>
+            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
+              <div className="font-heading text-lg font-black">{exercice.dureePlafondSec}s</div>
+              <div className="text-[10px] uppercase text-[var(--grey)]">Durée plafond</div>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-4 rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center text-xs text-[var(--grey)]">
+            Journal de durée — pas de cible auto pour cet exercice.
+          </p>
+        )
+      ) : (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
+            <div className="font-heading text-lg font-black">{exercice.repPlancher}</div>
+            <div className="text-[10px] uppercase text-[var(--grey)]">Reps plancher</div>
+          </div>
+          <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
+            <div className="font-heading text-lg font-black">{exercice.repPlafond}</div>
+            <div className="text-[10px] uppercase text-[var(--grey)]">Reps plafond</div>
+          </div>
         </div>
-        <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
-          <div className="font-heading text-lg font-black">{exercice.repPlafond}</div>
-          <div className="text-[10px] uppercase text-[var(--grey)]">Reps plafond</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
