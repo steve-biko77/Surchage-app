@@ -38,6 +38,9 @@ export const exercices = pgTable("exercices", {
   repPlancher: integer("rep_plancher").notNull().default(8),
   repPlafond: integer("rep_plafond").notNull().default(12),
   typeCharge: text("type_charge").notNull().default("haltere"), // "haltere" | "poulie" | "barre" | "poids_du_corps"
+  uniteMesure: text("unite_mesure").notNull().default("repetitions"), // "repetitions" | "duree"
+  dureePlancherSec: integer("duree_plancher_sec"),
+  dureePlafondSec: integer("duree_plafond_sec"),
 });
 
 export const objectifsExercices = pgTable(
@@ -56,6 +59,7 @@ export const series = pgTable("series", {
   poids: real("poids").notNull().default(0),
   reps: integer("reps").notNull(),
   sets: integer("sets").notNull(),
+  dureeSecondes: integer("duree_secondes"), // rempli seulement si l'exercice a uniteMesure = "duree"
   note: text("note").default(""),
   source: text("source").notNull().default("manuel"), // "manuel" | "strava" | "boditrax" (Phase 4)
   createdAt: timestamp("created_at").defaultNow(),
@@ -73,7 +77,7 @@ export const exercicesMuscles = pgTable("exercices_muscles", {
   muscle: text("muscle").notNull(),
   // valeurs possibles, referentiel ferme :
   // deltoide_anterieur, deltoide_lateral, deltoide_posterieur, trapeze,
-  // grand_dorsal, pectoraux, biceps, triceps, avant_bras, abdominaux,
+  // grand_dorsal, pectoraux, biceps, triceps, avant_bras, abdominaux, obliques,
   // quadriceps, ischio_jambiers, fessiers, mollets
   role: text("role").notNull(), // "primaire" | "secondaire"
 });

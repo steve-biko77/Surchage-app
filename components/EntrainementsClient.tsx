@@ -69,6 +69,9 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
   const [groupeExo, setGroupeExo] = useState(GROUPES[0]);
   const [typeChargeExo, setTypeChargeExo] = useState("haltere");
   const [programmeExo, setProgrammeExo] = useState("");
+  const [uniteMesureExo, setUniteMesureExo] = useState("repetitions");
+  const [dureePlancherExo, setDureePlancherExo] = useState("");
+  const [dureePlafondExo, setDureePlafondExo] = useState("");
   const [creationEnCours, setCreationEnCours] = useState(false);
 
   const exerciceParId = useMemo(() => new Map(exercices.map((e) => [e.id, e])), [exercices]);
@@ -161,9 +164,15 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
         programmeId: programmeExo || null,
         groupeMusculaire: groupeExo,
         typeCharge: typeChargeExo,
+        uniteMesure: uniteMesureExo,
+        dureePlancherSec: uniteMesureExo === "duree" && dureePlancherExo ? parseInt(dureePlancherExo, 10) : null,
+        dureePlafondSec: uniteMesureExo === "duree" && dureePlafondExo ? parseInt(dureePlafondExo, 10) : null,
       }),
     });
     setNomExo("");
+    setUniteMesureExo("repetitions");
+    setDureePlancherExo("");
+    setDureePlafondExo("");
     setCreationEnCours(false);
     setShowNouvelExercice(false);
     router.refresh();
@@ -335,6 +344,44 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
                 {programmes.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
               </select>
             </div>
+
+            <div className="mb-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Unité de mesure">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={uniteMesureExo === "repetitions"}
+                onClick={() => setUniteMesureExo("repetitions")}
+                className={`rounded-lg border py-2 text-xs font-medium ${uniteMesureExo === "repetitions" ? "border-[#FF5A1F] bg-[#2a1c10] text-[#FF5A1F]" : "border-[var(--steel)] text-[var(--grey)]"}`}
+              >
+                Répétitions
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={uniteMesureExo === "duree"}
+                onClick={() => setUniteMesureExo("duree")}
+                className={`rounded-lg border py-2 text-xs font-medium ${uniteMesureExo === "duree" ? "border-[#3B82C4] bg-[#122233] text-[#3B82C4]" : "border-[var(--steel)] text-[var(--grey)]"}`}
+              >
+                Durée
+              </button>
+            </div>
+
+            {uniteMesureExo === "duree" && (
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="duree-plancher-exo">Durée plancher (s)</label>
+                  <input id="duree-plancher-exo" type="number" inputMode="numeric" placeholder="ex: 30" value={dureePlancherExo} onChange={(e) => setDureePlancherExo(e.target.value)} className="w-full text-sm" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor="duree-plafond-exo">Durée plafond (s)</label>
+                  <input id="duree-plafond-exo" type="number" inputMode="numeric" placeholder="ex: 60" value={dureePlafondExo} onChange={(e) => setDureePlafondExo(e.target.value)} className="w-full text-sm" />
+                </div>
+                <p className="col-span-2 text-[10px] text-[var(--grey)]">
+                  Laisse vide pour un exercice sans cible auto (footing, jeu libre…) — juste un journal de durée.
+                </p>
+              </div>
+            )}
+
             <Button onClick={creerExercice} disabled={creationEnCours || !nomExo} className="w-full">
               {creationEnCours ? "Création…" : "Créer l'exercice"}
             </Button>

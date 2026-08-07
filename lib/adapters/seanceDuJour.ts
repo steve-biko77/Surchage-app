@@ -46,7 +46,7 @@ export async function resoudreSeanceDuJour() {
       const cible = calculerCibleAuto(historique, exo);
       const seriesAujourdhui = historique
         .filter((s) => s.date === today)
-        .map((s) => ({ id: s.id, poids: s.poids, reps: s.reps, sets: s.sets, note: s.note }));
+        .map((s) => ({ id: s.id, poids: s.poids, reps: s.reps, sets: s.sets, dureeSecondes: s.dureeSecondes, note: s.note }));
       return { ...exo, cible, seriesAujourdhui };
     })
   );

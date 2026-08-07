@@ -68,6 +68,9 @@ export const exercicesRepository = {
     typeCharge?: string;
     repPlancher?: number;
     repPlafond?: number;
+    uniteMesure?: string;
+    dureePlancherSec?: number | null;
+    dureePlafondSec?: number | null;
   }) {
     const [row] = await db.insert(exercices).values(input).returning();
     return row;
@@ -92,7 +95,15 @@ export const seriesRepository = {
   async all() {
     return db.select().from(series);
   },
-  async create(input: { date: string; exerciceId: string; poids: number; reps: number; sets: number; note?: string }) {
+  async create(input: {
+    date: string;
+    exerciceId: string;
+    poids: number;
+    reps: number;
+    sets: number;
+    dureeSecondes?: number | null;
+    note?: string;
+  }) {
     const [row] = await db.insert(series).values(input).returning();
     return row;
   },

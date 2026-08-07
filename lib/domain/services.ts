@@ -48,12 +48,30 @@ export const INCREMENT_PAR_TYPE: Record<string, number> = {
  * En cas d'echec (note "echec" ou reps < repPlancher), on stabilise la charge actuelle.
  * Pour les exercices au poids du corps, le plafond de reps declenche l'ajout d'une
  * serie plutot qu'une augmentation de charge (il n'y a pas de charge a augmenter).
+ *
+ * Pour les exercices a duree (uniteMesure = "duree"), meme logique de double
+ * progression mais sur la duree tenue plutot que sur les repetitions. Si l'exercice
+ * n'a pas de plancher/plafond definis (footing, jeu libre...), aucune cible auto
+ * n'est proposee : on ne force pas une logique de progression la ou elle n'a pas
+ * de sens (juste un journal de duree).
  */
 export function calculerCibleAuto(
   dernieresSeries: Serie[],
-  exercice: { typeCharge: string; repPlancher: number; repPlafond: number }
+  exercice: {
+    typeCharge: string;
+    repPlancher: number;
+    repPlafond: number;
+    uniteMesure?: string;
+    dureePlancherSec?: number | null;
+    dureePlafondSec?: number | null;
+  }
 ): CibleAuto | null {
   if (dernieresSeries.length === 0) return null;
+
+  if (exercice.uniteMesure === "duree") {
+    return calculerCibleAutoDuree(dernieresSeries, exercice);
+  }
+
   const sorted = [...dernieresSeries].sort((a, b) => a.date.localeCompare(b.date));
   const derniere = sorted[sorted.length - 1];
   const auPoidsDuCorps = exercice.typeCharge === "poids_du_corps";
@@ -66,6 +84,7 @@ export function calculerCibleAuto(
 
   if (echec) {
     return {
+      mode: "reps",
       poidsCible: derniere.poids,
       repsCible: exercice.repPlancher,
       justification: "Stabilise a la charge actuelle avant de reprogresser.",
@@ -74,6 +93,7 @@ export function calculerCibleAuto(
 
   if (derniere.reps < exercice.repPlafond) {
     return {
+      mode: "reps",
       poidsCible: derniere.poids,
       repsCible: derniere.reps + 1,
       justification: `Meme charge, +1 repetition (double progression, plafond ${exercice.repPlafond}).`,
@@ -83,15 +103,61 @@ export function calculerCibleAuto(
   // Plafond de reps atteint
   if (auPoidsDuCorps) {
     return {
+      mode: "reps",
       poidsCible: 0,
       repsCible: exercice.repPlancher,
       justification: "Plafond de reps atteint -> ajoute une serie plutot qu'un poids (exercice au poids du corps).",
     };
   }
   return {
+    mode: "reps",
     poidsCible: Math.round((derniere.poids + increment) * 2) / 2,
     repsCible: exercice.repPlancher,
     justification: `Plafond atteint -> +${increment}kg, reps repartent a ${exercice.repPlancher}.`,
+  };
+}
+
+const INCREMENT_DUREE_SEC = 5;
+
+function calculerCibleAutoDuree(
+  dernieresSeries: Serie[],
+  exercice: { dureePlancherSec?: number | null; dureePlafondSec?: number | null }
+): CibleAuto | null {
+  const { dureePlancherSec, dureePlafondSec } = exercice;
+  if (dureePlancherSec == null || dureePlafondSec == null) return null;
+
+  const avecDuree = dernieresSeries.filter((s) => s.dureeSecondes != null);
+  if (avecDuree.length === 0) return null;
+
+  const sorted = [...avecDuree].sort((a, b) => a.date.localeCompare(b.date));
+  const derniere = sorted[sorted.length - 1];
+  const dureeDerniere = derniere.dureeSecondes as number;
+
+  const echec =
+    derniere.note?.toLowerCase().includes("échec") ||
+    derniere.note?.toLowerCase().includes("echec") ||
+    dureeDerniere < dureePlancherSec;
+
+  if (echec) {
+    return {
+      mode: "duree",
+      dureeCibleSec: dureePlancherSec,
+      justification: "Stabilise a cette duree avant de reprogresser.",
+    };
+  }
+
+  if (dureeDerniere < dureePlafondSec) {
+    return {
+      mode: "duree",
+      dureeCibleSec: Math.min(dureePlafondSec, dureeDerniere + INCREMENT_DUREE_SEC),
+      justification: `Meme serie, +${INCREMENT_DUREE_SEC}s (double progression, plafond ${dureePlafondSec}s).`,
+    };
+  }
+
+  return {
+    mode: "duree",
+    dureeCibleSec: dureePlancherSec,
+    justification: `Plafond de ${dureePlafondSec}s atteint -> ajoute une serie, la duree repart a ${dureePlancherSec}s.`,
   };
 }
 
