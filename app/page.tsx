@@ -1,26 +1,22 @@
 export const dynamic = "force-dynamic";
 
-import { Target, CalendarClock } from "lucide-react";
-import {
-  programmesRepository, exercicesRepository, seriesRepository, objectifsDuJourRepository,
-  seancesPlanifieesRepository,
-} from "@/lib/adapters/repositories";
-import { jourDeLaSemaine, todayISO, calculerCibleAuto, calculerNiveauFlamme, calculerResumeSeance } from "@/lib/domain/services";
+import Link from "next/link";
+import { Target, CalendarClock, ListChecks } from "lucide-react";
+import { seriesRepository, objectifsDuJourRepository } from "@/lib/adapters/repositories";
+import { resoudreSeanceDuJour } from "@/lib/adapters/seanceDuJour";
+import { calculerNiveauFlamme, calculerResumeSeance, todayISO } from "@/lib/domain/services";
 import ExerciseCard from "@/components/ExerciseCard";
 import FlameBadge from "@/components/FlameBadge";
 import MuscleMap from "@/components/MuscleMap";
 import SeanceResumeWidget from "@/components/SeanceResumeWidget";
+import CarrouselModeles from "@/components/CarrouselModeles";
 
 export default async function SeanceDuJourPage() {
-  const jour = jourDeLaSemaine();
-  const today = todayISO();
+  const { jour, today, nomSeance, estPlanifiee, exercicesAvecCible, tousExercices } = await resoudreSeanceDuJour();
 
-  const [programmesDuJour, tousExercices, toutesSeries, objectifDuJour, seancesDuJour] = await Promise.all([
-    programmesRepository.parJour(jour),
-    exercicesRepository.all(),
+  const [toutesSeries, objectifDuJour] = await Promise.all([
     seriesRepository.all(),
     objectifsDuJourRepository.parDate(today),
-    seancesPlanifieesRepository.parDate(today),
   ]);
 
   const exoParId = new Map(tousExercices.map((e) => [e.id, e]));
@@ -40,54 +36,25 @@ export default async function SeanceDuJourPage() {
   const seriesAujourdhui = toutesSeries.filter((s) => s.date === today);
   const resume = calculerResumeSeance(seriesAujourdhui, groupeParExercice);
 
-  // La seance du jour se resout UNIQUEMENT sur la date (scenario B4) : le statut
-  // planifiee/realisee ne sert qu'a l'affichage du calendrier, jamais a decider
-  // quelle seance charger — sinon la seance change sous les pieds de l'utilisateur
-  // des que la 1ere serie bascule le statut en "realisee" (bug H).
-  const seanceDuJour = seancesDuJour[0] ?? null;
-
-  let nomSeance: string;
-  let exosOrdonnes: typeof tousExercices;
-  let estPlanifiee = false;
-
-  if (seanceDuJour) {
-    nomSeance = seanceDuJour.nom;
-    estPlanifiee = true;
-    exosOrdonnes = seanceDuJour.exerciceIds
-      .map((id) => exoParId.get(id))
-      .filter((e): e is NonNullable<typeof e> => Boolean(e));
-  } else {
-    const programme = programmesDuJour[0] ?? null;
-    if (!programme) {
-      return (
-        <div>
-          {resume.nbSeries > 0 && <div className="mb-4"><SeanceResumeWidget resume={resume} /></div>}
-          <MuscleMap volumeParGroupe={volumeParGroupe} />
-          <div className="mt-4 rounded-2xl border border-[var(--card-border)] bg-[var(--bg-card)] py-12 text-center text-[var(--grey)]">
-            <p className="mb-2 text-base">
-              Aucun programme configuré pour <b className="capitalize text-[#FF5A1F]">{jour}</b>.
-            </p>
-            <p className="text-sm">Configure ton split hebdomadaire pour que la séance du jour apparaisse ici automatiquement.</p>
-          </div>
+  if (!nomSeance) {
+    return (
+      <div>
+        <CarrouselModeles exercices={tousExercices} />
+        {resume.nbSeries > 0 && <div className="mb-4"><SeanceResumeWidget resume={resume} /></div>}
+        <MuscleMap volumeParGroupe={volumeParGroupe} />
+        <div className="mt-4 rounded-2xl border border-[var(--card-border)] bg-[var(--bg-card)] py-12 text-center text-[var(--grey)]">
+          <p className="mb-2 text-base">
+            Aucun programme configuré pour <b className="capitalize text-[#FF5A1F]">{jour}</b>.
+          </p>
+          <p className="text-sm">Configure ton split hebdomadaire pour que la séance du jour apparaisse ici automatiquement.</p>
         </div>
-      );
-    }
-    nomSeance = programme.nom;
-    const exos = await exercicesRepository.parProgramme(programme.id);
-    exosOrdonnes = [...exos].sort((a, b) => Number(b.prioritaire) - Number(a.prioritaire) || a.ordre - b.ordre);
+      </div>
+    );
   }
-
-  const exercicesAvecCible = await Promise.all(
-    exosOrdonnes.map(async (exo) => {
-      const historique = await seriesRepository.parExercice(exo.id);
-      const cible = calculerCibleAuto(historique, exo);
-      const seriesAujourdhuiExo = historique.filter((s) => s.date === today).map((s) => ({ id: s.id, poids: s.poids, reps: s.reps, sets: s.sets, note: s.note }));
-      return { ...exo, cible, seriesAujourdhui: seriesAujourdhuiExo };
-    })
-  );
 
   const totalSets = exercicesAvecCible.flatMap((e) => e.seriesAujourdhui).reduce((sum, s) => sum + s.sets, 0);
   const niveauFlamme = calculerNiveauFlamme(totalSets);
+  const nbCompletes = exercicesAvecCible.filter((e) => e.seriesAujourdhui.length > 0).length;
 
   return (
     <div>
@@ -99,11 +66,26 @@ export default async function SeanceDuJourPage() {
         <FlameBadge niveau={niveauFlamme} />
       </div>
 
+      {!estPlanifiee && <CarrouselModeles exercices={tousExercices} />}
+
       {estPlanifiee && (
         <div className="mb-4 flex items-center gap-2 rounded-xl border-l-2 border-[#3B82C4] bg-gradient-to-r from-[#122233] to-transparent px-3 py-2.5 text-sm text-[#a9d3f5]">
           <CalendarClock className="h-4 w-4 shrink-0 text-[#3B82C4]" aria-hidden="true" />
           <span>Séance planifiée pour aujourd&apos;hui.</span>
         </div>
+      )}
+
+      {exercicesAvecCible.length > 0 && (
+        <Link
+          href="/entrainement-en-cours"
+          className="mb-4 flex items-center justify-between gap-2 rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm"
+        >
+          <span className="flex items-center gap-2">
+            <ListChecks className="h-4 w-4 text-[#FF5A1F]" aria-hidden="true" />
+            Progression : <b>{nbCompletes} / {exercicesAvecCible.length}</b> exercices
+          </span>
+          <span className="text-xs text-[#3B82C4]">Voir tout →</span>
+        </Link>
       )}
 
       {objectifDuJour && (
