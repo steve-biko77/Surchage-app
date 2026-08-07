@@ -14,6 +14,8 @@ type SerieDuJour = { id: string; poids: number; reps: number; sets: number; note
 
 export default function ExerciseCard({
   exercice,
+  estProchain = false,
+  rayerSiComplete = false,
 }: {
   exercice: {
     id: string;
@@ -23,6 +25,10 @@ export default function ExerciseCard({
     cible: Cible;
     seriesAujourdhui: SerieDuJour[];
   };
+  /** Met en avant cet exercice comme "le prochain a faire" (vue /entrainement-en-cours) */
+  estProchain?: boolean;
+  /** Applique le style raye + attenue une fois complete (vue /entrainement-en-cours uniquement) */
+  rayerSiComplete?: boolean;
 }) {
   const router = useRouter();
   const [poids, setPoids] = useState(exercice.cible?.poidsCible ?? 0);
@@ -50,20 +56,28 @@ export default function ExerciseCard({
   }
 
   const dejaFait = exercice.seriesAujourdhui.length > 0;
+  const rayer = rayerSiComplete && dejaFait;
 
   return (
-    <Card className={`mb-3 overflow-hidden ${exercice.prioritaire ? "border-[#FF5A1F]/50" : ""}`}>
-      {exercice.prioritaire && <div className="h-0.5 w-full bg-gradient-to-r from-[#FF5A1F] to-transparent" aria-hidden="true" />}
+    <Card
+      className={`mb-3 overflow-hidden transition-opacity ${
+        estProchain ? "border-[#FF5A1F] shadow-[0_0_0_1px_rgba(255,90,31,0.4)]" : exercice.prioritaire ? "border-[#FF5A1F]/50" : ""
+      } ${rayer && !estProchain ? "opacity-60" : ""}`}
+    >
+      {(exercice.prioritaire || estProchain) && <div className="h-0.5 w-full bg-gradient-to-r from-[#FF5A1F] to-transparent" aria-hidden="true" />}
       <div className="flex items-start gap-3 p-4">
         <Link href={`/exercices/${exercice.id}`} aria-label={`Voir la fiche de ${exercice.nom}`}>
           <MuscleSilhouette groupe={exercice.groupeMusculaire} />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate font-heading text-base font-bold leading-tight">{exercice.nom}</h3>
+            <h3 className={`truncate font-heading text-base font-bold leading-tight ${rayer ? "line-through decoration-[var(--grey)]" : ""}`}>
+              {exercice.nom}
+            </h3>
             {exercice.prioritaire && (
               <Star className="h-3.5 w-3.5 shrink-0 text-[#FF5A1F]" fill="#FF5A1F" aria-label="Exercice priorisé" />
             )}
+            {estProchain && <Badge variant="accent" className="shrink-0">Suivant</Badge>}
           </div>
           <Badge variant="default" className="mt-1.5">{exercice.groupeMusculaire}</Badge>
 
