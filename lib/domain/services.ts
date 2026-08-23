@@ -188,6 +188,94 @@ export function calculerProgression(seriesExercice: Serie[]) {
   return { courbe, unRMMax: best, delta, nbSeances: sorted.length };
 }
 
+/**
+ * volumeSerie - charge totale deplacee sur une serie. Pour les exercices au poids
+ * du corps (poids = 0), on retombe sur reps x sets : ca rend visible une progression
+ * en repetitions/series qui serait sinon invisible sur une courbe de poids plate.
+ */
+export function volumeSerie(s: Serie): number {
+  const charge = s.poids && s.poids > 0 ? s.poids : 1;
+  return charge * s.reps * s.sets;
+}
+
+export type MetriqueProgression = "poids" | "volume" | "reps" | "duree";
+
+export interface PointProgression {
+  date: string;
+  poids: number;
+  reps: number;
+  sets: number;
+  dureeSecondes: number | null;
+  volume: number;
+  unRM: number | null;
+}
+
+/**
+ * calculerProgressionV2 - progression multi-metrique. Le poids seul est un mauvais
+ * signal pour un exercice au poids du corps (toujours 0) ou a duree : la metrique
+ * par defaut (metriquePrincipale) s'adapte donc au type d'exercice.
+ */
+export interface ProgressionV2 {
+  points: PointProgression[];
+  metriquePrincipale: MetriqueProgression;
+  auPoidsDuCorps: boolean;
+  aDuree: boolean;
+  deltas: { poids: number; volume: number; reps: number; duree: number };
+  nbSeances: number;
+  unRMMax: number | null;
+}
+
+export function calculerProgressionV2(
+  seriesExercice: Serie[],
+  exercice: { typeCharge: string; uniteMesure: string }
+): ProgressionV2 {
+  const sorted = [...seriesExercice].sort((a, b) => a.date.localeCompare(b.date));
+  const auPoidsDuCorps = exercice.typeCharge === "poids_du_corps";
+  const aDuree = exercice.uniteMesure === "duree";
+
+  const points: PointProgression[] = sorted.map((s) => ({
+    date: s.date,
+    poids: s.poids,
+    reps: s.reps,
+    sets: s.sets,
+    dureeSecondes: s.dureeSecondes ?? null,
+    volume: volumeSerie(s),
+    unRM: epley1RM(s.poids, s.reps),
+  }));
+
+  let metriquePrincipale: MetriqueProgression;
+  if (aDuree) metriquePrincipale = "duree";
+  else if (auPoidsDuCorps) metriquePrincipale = "volume";
+  else metriquePrincipale = "poids";
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  const deltas =
+    points.length >= 2
+      ? {
+          poids: last.poids - first.poids,
+          volume: last.volume - first.volume,
+          reps: last.reps - first.reps,
+          duree: (last.dureeSecondes ?? 0) - (first.dureeSecondes ?? 0),
+        }
+      : { poids: 0, volume: 0, reps: 0, duree: 0 };
+
+  const unRMMax = points.reduce<number | null>(
+    (m, p) => (p.unRM && (!m || p.unRM > m) ? p.unRM : m),
+    null
+  );
+
+  return {
+    points,
+    metriquePrincipale,
+    auPoidsDuCorps,
+    aDuree,
+    deltas,
+    nbSeances: sorted.length,
+    unRMMax,
+  };
+}
+
 /** calculerCoherence - vision globale, formule identique au module Sport */
 export function calculerCoherence(joursActifs: number, joursPrevus: number): number {
   if (joursPrevus <= 0) return 0;
