@@ -18,7 +18,8 @@ type Objectif = {
   type: TypeObjectif;
   exerciceIds: string[];
   poidsCible: number | null;
-  progressionPerformance: number | null;
+  progression: number;
+  unite: string;
   meilleurPoids: number | null;
 };
 
@@ -89,7 +90,7 @@ export default function ObjectifsClient({
             .map((id) => exercices.find((e) => e.id === id)?.nom)
             .filter(Boolean)
             .join(", ");
-          const pct = o.progressionPerformance ?? 0;
+          const pct = o.progression;
           const atteint = pct >= 100;
           return (
             <Card key={o.id} className="mb-3">
@@ -110,7 +111,7 @@ export default function ObjectifsClient({
                 </div>
                 <Progress value={pct} indicatorClassName="from-[#2a5f8f] to-[#3B82C4]" />
                 <div className="mt-2 flex justify-between text-xs text-[var(--grey)]">
-                  <span>{o.meilleurPoids ?? 0}kg / {o.poidsCible}kg</span>
+                  <span>{o.unite}</span>
                   <span className="font-medium text-[var(--chalk)]">{pct}%</span>
                 </div>
                 <p className="mt-2 text-[10px] text-[var(--grey)]">Progression calculée automatiquement à chaque nouvelle série.</p>
@@ -119,7 +120,7 @@ export default function ObjectifsClient({
           );
         }
 
-        const pct = o.heuresCible > 0 ? Math.min(100, Math.round((o.minutesInvesties / 60 / o.heuresCible) * 100)) : 0;
+        const pct = o.progression;
         return (
           <Card key={o.id} className="mb-3">
             <CardContent className="pt-4">
@@ -132,7 +133,7 @@ export default function ObjectifsClient({
               </div>
               <Progress value={pct} />
               <div className="mt-2 mb-3 flex justify-between text-xs text-[var(--grey)]">
-                <span>{Math.round((o.minutesInvesties / 60) * 10) / 10} / {o.heuresCible}h</span>
+                <span>{o.unite}</span>
                 <span className="font-medium text-[var(--chalk)]">{pct}%</span>
               </div>
               <div className="flex gap-2">

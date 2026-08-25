@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { objectifsRepository, exercicesRepository, seriesRepository, objectifsExercicesRepository } from "@/lib/adapters/repositories";
-import { calculerProgressionObjectifPerformance } from "@/lib/domain/services";
+import { objectifDepuisRow } from "@/lib/domain/objectifMapper";
 import ObjectifsClient from "@/components/ObjectifsClient";
 
 export default async function ObjectifsPage() {
@@ -16,13 +16,18 @@ export default async function ObjectifsPage() {
       const type = o.type === "performance" ? ("performance" as const) : ("temps" as const);
       const exerciceIds = tousLesLiens.filter((l) => l.objectifId === o.id).map((l) => l.exerciceId);
 
-      if (type !== "performance" || exerciceIds.length === 0 || !o.poidsCible) {
-        return { ...o, type, exerciceIds, progressionPerformance: null, meilleurPoids: null };
-      }
-      const seriesLiees = await seriesRepository.parExercices(exerciceIds);
-      const progressionPerformance = calculerProgressionObjectifPerformance(seriesLiees, o.poidsCible);
+      const seriesLiees = type === "performance" && exerciceIds.length > 0
+        ? await seriesRepository.parExercices(exerciceIds)
+        : [];
       const meilleurPoids = seriesLiees.reduce((max, s) => Math.max(max, s.poids), 0);
-      return { ...o, type, exerciceIds, progressionPerformance, meilleurPoids };
+
+      // Polymorphisme : ObjectifTemps et ObjectifPerformance savent chacun
+      // calculer leur propre progression, plus besoin de brancher sur le type ici.
+      const instance = objectifDepuisRow(o, meilleurPoids);
+      const progression = instance.calculerProgression();
+      const unite = instance.describeUnite();
+
+      return { ...o, type, exerciceIds, progression, unite, meilleurPoids: type === "performance" ? meilleurPoids : null };
     })
   );
 
