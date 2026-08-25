@@ -90,6 +90,9 @@ export const tachesRepository = {
   async parDate(date: string) {
     return db.select().from(taches).where(eq(taches.date, date));
   },
+  async entreDates(dateDebut: string, dateFin: string) {
+    return db.select().from(taches).where(and(gte(taches.date, dateDebut), lte(taches.date, dateFin)));
+  },
   async create(input: { date: string; texte: string; heure?: string | null; objectifId?: string | null }) {
     const [row] = await db.insert(taches).values(input).returning();
     return row;
