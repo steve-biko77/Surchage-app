@@ -282,20 +282,6 @@ export function calculerCoherence(joursActifs: number, joursPrevus: number): num
   return Math.round((joursActifs / joursPrevus) * 100);
 }
 
-/**
- * calculerProgressionObjectifPerformance - % d'atteinte d'un objectif "performance".
- * seriesExercice peut regrouper les series de PLUSIEURS exercices lies a l'objectif
- * (relation plusieurs-a-plusieurs) : on retient le meilleur poids atteint tous confondus.
- */
-export function calculerProgressionObjectifPerformance(
-  seriesExercice: Serie[],
-  poidsCible: number
-): number {
-  const meilleurPoids = seriesExercice.reduce((max, s) => Math.max(max, s.poids), 0);
-  if (poidsCible <= 0) return 0;
-  return Math.min(100, Math.round((meilleurPoids / poidsCible) * 100));
-}
-
 /** Zone corporelle regroupant les groupes musculaires - pour le libelle de dominante */
 const ZONE_PAR_GROUPE: Record<GroupeMusculaire, string> = {
   dos: "haut du corps",
