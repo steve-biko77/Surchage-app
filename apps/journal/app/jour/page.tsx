@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { tachesRepository, objectifsRepository } from "@/lib/adapters/repositories";
+import { tachesRepository, objectifsRepository, notesJourRepository } from "@/lib/adapters/repositories";
 import { todayISO, decalerDate } from "@/lib/domain/services";
 import JourClient from "@/components/JourClient";
 
@@ -11,9 +11,10 @@ export default async function JourPage({
   const { date: dateParam } = await searchParams;
   const date = dateParam || todayISO();
 
-  const [taches, objectifs] = await Promise.all([
+  const [taches, objectifs, note] = await Promise.all([
     tachesRepository.parDate(date),
     objectifsRepository.all(),
+    notesJourRepository.parDate(date),
   ]);
 
   return (
@@ -24,6 +25,7 @@ export default async function JourPage({
       nextDate={decalerDate(date, 1)}
       taches={taches}
       objectifs={objectifs.map((o) => ({ id: o.id, nom: o.nom }))}
+      noteInitiale={note?.texte ?? ""}
     />
   );
 }

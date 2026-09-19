@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/lib/toast";
 
@@ -20,6 +20,7 @@ export default function JourClient({
   nextDate,
   taches,
   objectifs,
+  noteInitiale,
 }: {
   date: string;
   today: string;
@@ -27,6 +28,7 @@ export default function JourClient({
   nextDate: string;
   taches: Tache[];
   objectifs: ObjectifOption[];
+  noteInitiale: string;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"checklist" | "planning">("checklist");
@@ -34,6 +36,37 @@ export default function JourClient({
   const [heure, setHeure] = useState("");
   const [objectifId, setObjectifId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [justToggled, setJustToggled] = useState<string | null>(null);
+
+  const [note, setNote] = useState(noteInitiale);
+  const [noteSaved, setNoteSaved] = useState(true);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setNote(noteInitiale);
+    setNoteSaved(true);
+  }, [date, noteInitiale]);
+
+  async function enregistrerNote(valeur: string) {
+    await fetch("/api/notes-jour", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, texte: valeur }),
+    });
+    setNoteSaved(true);
+  }
+
+  function onNoteChange(valeur: string) {
+    setNote(valeur);
+    setNoteSaved(false);
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(() => enregistrerNote(valeur), 900);
+  }
+
+  function onNoteBlur() {
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    if (!noteSaved) enregistrerNote(note);
+  }
 
   const label = new Date(date + "T00:00:00").toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -46,6 +79,8 @@ export default function JourClient({
   }
 
   async function toggle(id: string) {
+    setJustToggled(id);
+    setTimeout(() => setJustToggled((cur) => (cur === id ? null : cur)), 320);
     await fetch(`/api/taches/${id}`, { method: "PATCH" });
     router.refresh();
   }
@@ -80,7 +115,9 @@ export default function JourClient({
     const obj = objectifs.find((o) => o.id === t.objectifId);
     return (
       <div className={`task ${t.fait ? "done" : ""}`}>
-        <div className="chk" onClick={() => toggle(t.id)}>{t.fait ? "✓" : ""}</div>
+        <div className={`chk ${justToggled === t.id ? "chk-pop" : ""}`} onClick={() => toggle(t.id)}>
+          {t.fait ? "✓" : ""}
+        </div>
         <div className="txt">
           {t.texte}
           {obj && <span className="obj-tag">🎯 {obj.nom}</span>}
@@ -148,6 +185,21 @@ export default function JourClient({
             })}
           </div>
         )}
+      </div>
+
+      <div className="card">
+        <h2>
+          Note du jour
+          <span className="note-status">{noteSaved ? "" : "…"}</span>
+        </h2>
+        <textarea
+          className="note-textarea"
+          placeholder="Comment s'est passée cette journée ?"
+          rows={3}
+          value={note}
+          onChange={(e) => onNoteChange(e.target.value)}
+          onBlur={onNoteBlur}
+        />
       </div>
 
       <div className="card">

@@ -12,6 +12,16 @@ export function todayISO(date: Date = new Date()): string {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
+/** Heure locale (0-23) a Paris pour un instant donne -- sert a borner les nudges 6h-22h. */
+export function heureLocaleParis(date: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: FUSEAU,
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  return Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+}
+
 /** Decale une date ISO (YYYY-MM-DD) d'un nombre de jours (peut etre negatif). */
 export function decalerDate(dateISO: string, jours: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
