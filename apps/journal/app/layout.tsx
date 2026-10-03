@@ -1,8 +1,25 @@
 import type { Metadata, Viewport } from "next";
+import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import TabNav from "@/components/TabNav";
 import ToastHost from "@/components/ToastHost";
 import InstallBanner from "@/components/InstallBanner";
+import OpeningSequence from "@/components/OpeningSequence";
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["italic", "normal"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Journal — Organisation & Disciplines",
@@ -14,7 +31,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Journal",
   },
   other: {
@@ -25,23 +42,24 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2C8FE0",
+  themeColor: "#0a0e1a",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={`${fraunces.variable} ${inter.variable}`}>
       <body>
+        <OpeningSequence />
         <div className="wrap">
           <div className="brand">
             <h1>Journal</h1>
-            <span className="tag">Organisation · Disciplines</span>
           </div>
           <p className="subtitle">Tâches, semaine, disciplines qui se suivent tout seuls, objectifs concrets.</p>
+          <div className="header-rule" />
           <InstallBanner />
-          <TabNav />
           <main>{children}</main>
         </div>
+        <TabNav />
         <ToastHost />
       </body>
     </html>

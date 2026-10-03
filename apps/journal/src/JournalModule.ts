@@ -20,6 +20,12 @@ export interface RapportObjectif {
   progression: number;
 }
 
+export interface RapportJourSerie {
+  date: string;
+  pourcentage: number;
+  engage: boolean;
+}
+
 export interface RapportJournal {
   dateDebut: string;
   dateFin: string;
@@ -28,6 +34,7 @@ export interface RapportJournal {
   objectifs: RapportObjectif[];
   joursEngages: number;
   joursTotal: number;
+  serieJournaliere: RapportJourSerie[];
 }
 
 export class JournalModule extends JarvisModule {
@@ -108,6 +115,26 @@ export class JournalModule extends JarvisModule {
       (d) => datesEngageesTaches.has(d) || datesEngageesDisciplines.has(d)
     ).length;
 
+    // Serie journaliere pour le graphique du dashboard : % de taches cochees
+    // ce jour-la (0 si aucune tache ce jour-la) + si le jour est "engage"
+    // (taches ou disciplines), pour distinguer les deux couleurs du graphe.
+    const tachesParDate = new Map<string, { total: number; faites: number }>();
+    for (const t of tachesPeriode) {
+      const entry = tachesParDate.get(t.date) ?? { total: 0, faites: 0 };
+      entry.total += 1;
+      if (t.fait) entry.faites += 1;
+      tachesParDate.set(t.date, entry);
+    }
+    const serieJournaliere: RapportJourSerie[] = toutesDates.map((d) => {
+      const jourTaches = tachesParDate.get(d);
+      const pourcentage = jourTaches && jourTaches.total > 0 ? Math.round((jourTaches.faites / jourTaches.total) * 100) : 0;
+      return {
+        date: d,
+        pourcentage,
+        engage: datesEngageesTaches.has(d) || datesEngageesDisciplines.has(d),
+      };
+    });
+
     return {
       dateDebut,
       dateFin,
@@ -116,6 +143,7 @@ export class JournalModule extends JarvisModule {
       objectifs,
       joursEngages,
       joursTotal: toutesDates.length,
+      serieJournaliere,
     };
   }
 }
