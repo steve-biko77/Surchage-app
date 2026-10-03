@@ -8,5 +8,19 @@ export default async function RecurrentesPage() {
     ...row,
     frequence: row.frequence as "journaliere" | "hebdomadaire",
   }));
-  return <RecurrentesClient initialModeles={modeles} />;
+
+  return (
+    <>
+      <header className="page-head">
+        <div>
+          <h1 className="page-title">Récurrentes</h1>
+          <p className="page-sub">
+            Les modèles actifs déposent automatiquement leur tâche sur la journée concernée, sans intervention.
+          </p>
+        </div>
+      </header>
+
+      <RecurrentesClient initialModeles={modeles} />
+    </>
+  );
 }

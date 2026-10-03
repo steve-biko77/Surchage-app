@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/lib/toast";
+import Segmented from "./Segmented";
+import { IconRepeat, IconPlus, IconX, IconClock } from "./icons";
 
 type Frequence = "journaliere" | "hebdomadaire";
 
@@ -48,7 +50,7 @@ export default function RecurrentesClient({ initialModeles }: { initialModeles: 
 
   async function creer() {
     if (!texte) {
-      showToast("Decris la tache");
+      showToast("Décris la tâche");
       return;
     }
     if (frequence === "hebdomadaire" && joursSemaine.length === 0) {
@@ -72,7 +74,7 @@ export default function RecurrentesClient({ initialModeles }: { initialModeles: 
     setJoursSemaine([]);
     setHeure("");
     setSaving(false);
-    showToast("Tache recurrente creee");
+    showToast("Tâche récurrente créée");
     router.refresh();
   }
 
@@ -86,66 +88,119 @@ export default function RecurrentesClient({ initialModeles }: { initialModeles: 
     router.refresh();
   }
 
-  return (
-    <>
-      <div className="card">
-        <h2>Taches recurrentes</h2>
-        {initialModeles.length === 0 && <div className="empty">Aucune tache recurrente pour l&apos;instant.</div>}
-        {initialModeles.map((m) => (
-          <div className="obj-card" key={m.id} style={{ opacity: m.actif ? 1 : 0.55 }}>
-            <div className="obj-top">
-              <div className="obj-name">
-                <span
-                  className="obj-type-badge"
-                  style={{
-                    background: m.frequence === "hebdomadaire" ? "#2C8FE022" : "#FFB02022",
-                    color: m.frequence === "hebdomadaire" ? "var(--blue-deep)" : "var(--sun)",
-                    marginRight: 6,
-                  }}
-                >
-                  {m.frequence === "hebdomadaire" ? "Hebdo" : "Jour"}
-                </span>
-                {m.texte}
-              </div>
-              <button className="obj-del" onClick={() => supprimer(m.id)}>Suppr.</button>
-            </div>
-            <div className="obj-meta">
-              <span>{describeFrequence(m)}{m.heure ? ` · ${m.heure}` : ""}</span>
-              <button type="button" className="mode-btn active" style={{ flex: "0 0 auto", padding: "4px 10px" }} onClick={() => basculerActif(m.id)}>
-                {m.actif ? "Desactiver" : "Activer"}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+  const actives = initialModeles.filter((m) => m.actif).length;
 
-      <div className="card">
-        <h2>Nouvelle tache recurrente</h2>
-        <div className="row">
-          <div className="field">
-            <label htmlFor="r-texte">Tache</label>
-            <input id="r-texte" type="text" placeholder="Ex : Reviser 20 min d'espagnol" value={texte} onChange={(e) => setTexte(e.target.value)} />
+  return (
+    <div className="grid g-main">
+      <section className="panel panel-pad-lg spot">
+        <div className="panel-head">
+          <div className="chip violet">
+            <IconRepeat />
+          </div>
+          <div className="ph-text">
+            <h2>Modèles récurrents</h2>
+            <p>
+              {initialModeles.length === 0
+                ? "Aucun modèle"
+                : `${actives} actif${actives > 1 ? "s" : ""} sur ${initialModeles.length}`}
+            </p>
           </div>
         </div>
 
-        <div className="mode-toggle" role="radiogroup" aria-label="Frequence">
-          <button className={`mode-btn ${frequence === "journaliere" ? "active" : ""}`} onClick={() => setFrequence("journaliere")}>Journaliere</button>
-          <button className={`mode-btn ${frequence === "hebdomadaire" ? "active" : ""}`} onClick={() => setFrequence("hebdomadaire")}>Hebdomadaire</button>
+        {initialModeles.length === 0 ? (
+          <div className="empty">
+            <IconRepeat />
+            Les tâches récurrentes se posent toutes seules sur ta journée. Crée la première à droite.
+          </div>
+        ) : (
+          <div className="grid g-2">
+            {initialModeles.map((m) => (
+              <div className="obj-card" key={m.id} style={{ opacity: m.actif ? 1 : 0.6 }}>
+                <div className="obj-top">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="obj-name">{m.texte}</div>
+                    <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                      <span className={`tag ${m.frequence === "hebdomadaire" ? "" : "brand"}`}>
+                        {describeFrequence(m)}
+                      </span>
+                      {m.heure && (
+                        <span className="tag">
+                          <IconClock style={{ width: 11, height: 11 }} />
+                          {m.heure}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button className="del" style={{ opacity: 1 }} onClick={() => supprimer(m.id)} aria-label="Supprimer le modèle">
+                    <IconX />
+                  </button>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <button type="button" className="btn btn-sm" onClick={() => basculerActif(m.id)}>
+                    {m.actif ? "Désactiver" : "Réactiver"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="panel panel-pad-lg spot">
+        <div className="panel-head">
+          <div className="chip teal">
+            <IconPlus />
+          </div>
+          <div className="ph-text">
+            <h2>Nouveau modèle</h2>
+            <p>Il se matérialisera automatiquement chaque jour concerné</p>
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="field">
+            <label htmlFor="r-texte">Tâche</label>
+            <input
+              id="r-texte"
+              type="text"
+              placeholder="Ex : Réviser 20 min d'espagnol"
+              value={texte}
+              onChange={(e) => setTexte(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label>Fréquence</label>
+          <Segmented
+            full
+            ariaLabel="Fréquence"
+            value={frequence}
+            onChange={setFrequence}
+            options={[
+              { value: "journaliere", label: "Journalière" },
+              { value: "hebdomadaire", label: "Hebdomadaire" },
+            ]}
+          />
         </div>
 
         {frequence === "hebdomadaire" && (
-          <div className="row" style={{ marginBottom: 14 }}>
-            {JOURS.map((j) => (
-              <button
-                key={j.valeur}
-                type="button"
-                className={`mode-btn ${joursSemaine.includes(j.valeur) ? "active" : ""}`}
-                style={{ flex: "0 0 40px", padding: "8px 0" }}
-                onClick={() => toggleJour(j.valeur)}
-              >
-                {j.label}
-              </button>
-            ))}
+          <div style={{ marginBottom: 14 }}>
+            <label>Jours concernés</label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {JOURS.map((j) => (
+                <button
+                  key={j.valeur}
+                  type="button"
+                  className={`pill pill-day ${joursSemaine.includes(j.valeur) ? "on" : ""}`}
+                  onClick={() => toggleJour(j.valeur)}
+                  aria-pressed={joursSemaine.includes(j.valeur)}
+                >
+                  {j.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -157,9 +212,10 @@ export default function RecurrentesClient({ initialModeles }: { initialModeles: 
         </div>
 
         <button className="btn-primary" onClick={creer} disabled={saving}>
-          {saving ? "Creation…" : "Creer la tache recurrente"}
+          <IconPlus style={{ width: 15, height: 15 }} />
+          {saving ? "Création…" : "Créer le modèle"}
         </button>
-      </div>
-    </>
+      </section>
+    </div>
   );
 }
