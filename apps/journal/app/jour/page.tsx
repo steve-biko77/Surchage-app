@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { tachesRepository, objectifsRepository, notesJourRepository } from "@/lib/adapters/repositories";
 import { todayISO, decalerDate } from "@/lib/domain/services";
+import { materialiserTachesRecurrentes } from "@/lib/domain/recurrence";
 import JourClient from "@/components/JourClient";
 
 export default async function JourPage({
@@ -10,6 +11,11 @@ export default async function JourPage({
 }) {
   const { date: dateParam } = await searchParams;
   const date = dateParam || todayISO();
+
+  // Filet de securite si le cron horaire n'a pas encore tourne aujourd'hui.
+  if (date === todayISO()) {
+    await materialiserTachesRecurrentes(date);
+  }
 
   const [taches, objectifs, note] = await Promise.all([
     tachesRepository.parDate(date),

@@ -48,6 +48,14 @@ export function calculerStreak(historique: string[], depuisDate: string): number
   return streak;
 }
 
+/** Jour de la semaine ISO d'une date (1=lundi..7=dimanche). */
+export function jourSemaineISO(dateISO: string): number {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const jour = date.getUTCDay(); // 0 = dimanche
+  return jour === 0 ? 7 : jour;
+}
+
 /** Lundi de la semaine ISO contenant la date donnee. */
 export function debutSemaine(dateISO: string): string {
   const [y, m, d] = dateISO.split("-").map(Number);

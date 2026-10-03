@@ -31,6 +31,16 @@ export const objectifs = pgTable("objectifs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const tachesRecurrentes = pgTable("taches_recurrentes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  texte: text("texte").notNull(),
+  frequence: text("frequence").notNull(), // "journaliere" | "hebdomadaire"
+  joursSemaine: integer("jours_semaine").array().notNull().default([]), // 1=lundi..7=dimanche, vide si journaliere
+  heure: text("heure"), // "HH:mm", nullable
+  objectifId: uuid("objectif_id").references(() => objectifs.id),
+  actif: boolean("actif").notNull().default(true),
+});
+
 export const taches = pgTable("taches", {
   id: uuid("id").defaultRandom().primaryKey(),
   date: text("date").notNull(),
@@ -38,6 +48,7 @@ export const taches = pgTable("taches", {
   heure: text("heure"), // "HH:mm", nullable (tache sans heure fixe = checklist)
   fait: boolean("fait").notNull().default(false),
   objectifId: uuid("objectif_id").references(() => objectifs.id),
+  tacheRecurrenteId: uuid("tache_recurrente_id").references(() => tachesRecurrentes.id),
 });
 
 export const notesJour = pgTable("notes_jour", {
@@ -47,12 +58,16 @@ export const notesJour = pgTable("notes_jour", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const pushSubscriptions = pgTable("push_subscriptions", {
+/** Refresh token OAuth Google (une seule ligne, app mono-utilisateur). Jamais loggee en clair. */
+export const googleAuth = pgTable("google_auth", {
   id: uuid("id").defaultRandom().primaryKey(),
-  endpoint: text("endpoint").notNull().unique(),
-  p256dh: text("p256dh").notNull(),
-  auth: text("auth").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  refreshToken: text("refresh_token").notNull(),
+});
+
+/** Calendrier Google secondaire "Journal — Rappels" (une seule ligne). */
+export const journalCalendar = pgTable("journal_calendar", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  googleCalendarId: text("google_calendar_id").notNull(),
 });
 
 /** Etat global du nudge adaptatif (une seule ligne, app mono-utilisateur). */

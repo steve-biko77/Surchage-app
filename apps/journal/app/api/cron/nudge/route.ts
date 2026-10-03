@@ -1,10 +1,11 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
-import { autoriseAppelInterne } from "@/lib/push/auth";
-import { tachesRepository, joursValidesRepository, nudgeStateRepository } from "@/lib/adapters/repositories";
+import { autoriseAppelInterne } from "@/lib/nudge/auth";
+import { tachesRepository, joursValidesRepository, nudgeStateRepository, journalCalendarRepository } from "@/lib/adapters/repositories";
 import { todayISO, heureLocaleParis } from "@/lib/domain/services";
-import { envoyerATous } from "@/lib/push/send";
-import { MESSAGES_JOURNEE_VIDE, MESSAGES_RAPPEL_STANDARD, pickVariant } from "@/lib/push/messages";
+import { materialiserTachesRecurrentes } from "@/lib/domain/recurrence";
+import { creerEvenementRappel } from "@/lib/google/calendar";
+import { MESSAGES_JOURNEE_VIDE, MESSAGES_RAPPEL_STANDARD, pickVariant } from "@/lib/nudge/messages";
 
 // Evite un doublon si l'appel externe (GitHub Actions) est redondant dans l'heure.
 const DEDOUBLONNAGE_MS = 50 * 60 * 1000;
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
   }
 
   const today = todayISO();
+  await materialiserTachesRecurrentes(today);
   const etat = await nudgeStateRepository.getOuCreer();
 
   const dejaNotifieRecemment =
@@ -37,9 +39,16 @@ export async function POST(req: Request) {
     if (dejaNotifieRecemment) {
       return NextResponse.json({ envoye: false, raison: "deja notifie recemment (anti-doublon)" });
     }
-    const resultat = await envoyerATous({ title: "Journal", body: message, url: "/jour" });
+    const calendrier = await journalCalendarRepository.get();
+    if (!calendrier) {
+      return NextResponse.json(
+        { envoye: false, raison: "Google Calendar non connecte -- visite /api/auth/google/start" },
+        { status: 409 }
+      );
+    }
+    await creerEvenementRappel(calendrier.googleCalendarId, message);
     await nudgeStateRepository.enregistrerNotification(message);
-    return NextResponse.json({ envoye: true, message, ...resultat });
+    return NextResponse.json({ envoye: true, message });
   }
 
   const taches = await tachesRepository.parDate(today);
