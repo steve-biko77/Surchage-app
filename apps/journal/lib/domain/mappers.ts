@@ -1,5 +1,5 @@
 // Reconstruit les instances de domaine (@productivity/core) a partir des colonnes DB.
-import { DisciplineCheckIn, ObjectifPerformance, ObjectifTemps, type Discipline, type Objectif } from "@productivity/core";
+import { DisciplineCheckIn, ObjectifMetrique, ObjectifTemps, type Discipline, type Objectif } from "@productivity/core";
 
 export interface DisciplineRow {
   id: string;
@@ -28,19 +28,25 @@ export interface ObjectifRow {
   deadline: string | null;
   heuresCible: number | null;
   minutesInvesties: number;
-  poidsCible: number | null;
-  meilleurPoidsAtteint: number | null;
+  unite: string | null;
+  valeurDepart: number | null;
+  valeurCible: number | null;
+  valeurActuelle: number | null;
+  sens: string | null;
 }
 
 export function objectifDepuisRow(row: ObjectifRow): Objectif {
-  if (row.type === "performance") {
-    return new ObjectifPerformance(
+  if (row.type === "metrique") {
+    return new ObjectifMetrique(
       row.id,
       row.nom,
       row.disciplineId ?? "",
       row.deadline,
-      row.poidsCible ?? 0,
-      row.meilleurPoidsAtteint ?? 0
+      row.unite ?? "",
+      row.valeurDepart ?? 0,
+      row.valeurCible ?? 0,
+      row.valeurActuelle ?? 0,
+      row.sens === "decroissant" ? "decroissant" : "croissant"
     );
   }
   return new ObjectifTemps(

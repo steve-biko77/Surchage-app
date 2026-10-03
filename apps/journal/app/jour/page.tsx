@@ -17,16 +17,27 @@ export default async function JourPage({
     await materialiserTachesRecurrentes(date);
   }
 
-  const [taches, objectifs, note] = await Promise.all([
+  const today = todayISO();
+  const estAujourdhui = date === today;
+
+  const [tachesDuJour, reportees, objectifs, note] = await Promise.all([
     tachesRepository.parDate(date),
+    estAujourdhui ? tachesRepository.reporteesAvant(date) : Promise.resolve([]),
     objectifsRepository.all(),
     notesJourRepository.parDate(date),
   ]);
 
+  // La fusion des taches reportees ne s'applique QUE sur la date du jour reel --
+  // en navigation passee, la date s'affiche telle qu'elle etait reellement.
+  const taches = [
+    ...tachesDuJour.map((t) => ({ ...t, reporteLe: null as string | null })),
+    ...reportees.map((t) => ({ ...t, reporteLe: t.date as string | null })),
+  ];
+
   return (
     <JourClient
       date={date}
-      today={todayISO()}
+      today={today}
       prevDate={decalerDate(date, -1)}
       nextDate={decalerDate(date, 1)}
       taches={taches}

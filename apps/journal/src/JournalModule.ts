@@ -1,8 +1,34 @@
 // Point de branchement Journal <-> Jarvis (note d'architecture, §4).
 // Meme contrat que SportModule (apps/sport/src/SportModule.ts).
 import { JarvisModule, type Discipline, type Objectif } from "@productivity/core";
-import { disciplinesRepository, joursValidesRepository, objectifsRepository } from "../lib/adapters/repositories";
+import { disciplinesRepository, joursValidesRepository, objectifsRepository, tachesRepository } from "../lib/adapters/repositories";
 import { disciplineDepuisRow, objectifDepuisRow } from "../lib/domain/mappers";
+import { calculerStreak, enumererDates, todayISO } from "../lib/domain/services";
+
+export interface RapportDiscipline {
+  id: string;
+  nom: string;
+  icone: string;
+  joursValides: number;
+  streak: number;
+}
+
+export interface RapportObjectif {
+  id: string;
+  nom: string;
+  unite: string;
+  progression: number;
+}
+
+export interface RapportJournal {
+  dateDebut: string;
+  dateFin: string;
+  pourcentageTachesFaites: number;
+  disciplines: RapportDiscipline[];
+  objectifs: RapportObjectif[];
+  joursEngages: number;
+  joursTotal: number;
+}
 
 export class JournalModule extends JarvisModule {
   readonly id = "journal";
@@ -35,5 +61,61 @@ export class JournalModule extends JarvisModule {
         };
       })
     );
+  }
+
+  /** Agrege les chiffres d'engagement sur [dateDebut, dateFin] pour la page /rapport. */
+  async getRapport(dateDebut: string, dateFin: string): Promise<RapportJournal> {
+    const [tachesPeriode, disciplinesRows, objectifsActifs] = await Promise.all([
+      tachesRepository.entreDates(dateDebut, dateFin),
+      disciplinesRepository.all(),
+      this.getObjectifsActifs(),
+    ]);
+
+    const totalTaches = tachesPeriode.length;
+    const tachesFaites = tachesPeriode.filter((t) => t.fait).length;
+    const pourcentageTachesFaites = totalTaches > 0 ? Math.round((tachesFaites / totalTaches) * 100) : 0;
+
+    const datesEngageesTaches = new Set(tachesPeriode.filter((t) => t.fait).map((t) => t.date));
+    const datesEngageesDisciplines = new Set<string>();
+    const today = todayISO();
+
+    const disciplines: RapportDiscipline[] = await Promise.all(
+      disciplinesRows.map(async (row) => {
+        const [historiqueComplet, joursPeriode] = await Promise.all([
+          joursValidesRepository.parDiscipline(row.id),
+          joursValidesRepository.parDisciplineEntreDates(row.id, dateDebut, dateFin),
+        ]);
+        joursPeriode.forEach((j) => datesEngageesDisciplines.add(j.date));
+        return {
+          id: row.id,
+          nom: row.nom,
+          icone: row.icone,
+          joursValides: joursPeriode.length,
+          streak: calculerStreak(historiqueComplet.map((j) => j.date), today),
+        };
+      })
+    );
+
+    const objectifs: RapportObjectif[] = objectifsActifs.map((o) => ({
+      id: o.id,
+      nom: o.nom,
+      unite: o.describeUnite(),
+      progression: o.calculerProgression(),
+    }));
+
+    const toutesDates = enumererDates(dateDebut, dateFin);
+    const joursEngages = toutesDates.filter(
+      (d) => datesEngageesTaches.has(d) || datesEngageesDisciplines.has(d)
+    ).length;
+
+    return {
+      dateDebut,
+      dateFin,
+      pourcentageTachesFaites,
+      disciplines,
+      objectifs,
+      joursEngages,
+      joursTotal: toutesDates.length,
+    };
   }
 }

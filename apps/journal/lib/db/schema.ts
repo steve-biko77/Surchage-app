@@ -21,13 +21,17 @@ export const joursValides = pgTable("jours_valides", {
 export const objectifs = pgTable("objectifs", {
   id: uuid("id").defaultRandom().primaryKey(),
   nom: text("nom").notNull(),
-  type: text("type").notNull().default("temps"), // "temps" | "performance"
+  type: text("type").notNull().default("temps"), // "temps" | "metrique"
   disciplineId: uuid("discipline_id").references(() => disciplinesInstances.id),
   deadline: text("deadline"), // ISO date string, nullable
   heuresCible: real("heures_cible"),
   minutesInvesties: integer("minutes_investies").notNull().default(0),
-  poidsCible: real("poids_cible"),
-  meilleurPoidsAtteint: real("meilleur_poids_atteint"),
+  // Objectif "metrique" generique (Elo, pages, km, kg...) -- remplace poidsCible/meilleurPoidsAtteint.
+  unite: text("unite"),
+  valeurDepart: real("valeur_depart"),
+  valeurCible: real("valeur_cible"),
+  valeurActuelle: real("valeur_actuelle"),
+  sens: text("sens"), // "croissant" | "decroissant"
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -49,6 +53,7 @@ export const taches = pgTable("taches", {
   fait: boolean("fait").notNull().default(false),
   objectifId: uuid("objectif_id").references(() => objectifs.id),
   tacheRecurrenteId: uuid("tache_recurrente_id").references(() => tachesRecurrentes.id),
+  ignoree: boolean("ignoree").notNull().default(false), // reportee indefiniment mais explicitement ecartee par l'utilisateur
 });
 
 export const notesJour = pgTable("notes_jour", {
