@@ -32,5 +32,22 @@ export default async function DisciplinesPage() {
     })
   );
 
-  return <DisciplinesClient disciplines={data} />;
+  const faites = data.filter((d) => d.faitAujourdhui).length;
+
+  return (
+    <>
+      <header className="page-head">
+        <div>
+          <h1 className="page-title">Disciplines</h1>
+          <p className="page-sub">
+            {data.length === 0
+              ? "Aucune discipline suivie."
+              : `${faites} sur ${data.length} validée${data.length > 1 ? "s" : ""} aujourd'hui.`}
+          </p>
+        </div>
+      </header>
+
+      <DisciplinesClient disciplines={data} />
+    </>
+  );
 }

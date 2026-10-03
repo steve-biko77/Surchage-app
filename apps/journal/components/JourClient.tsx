@@ -2,6 +2,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/lib/toast";
+import { ProgressRing } from "./charts";
+import Segmented from "./Segmented";
+import {
+  IconCheck,
+  IconX,
+  IconChevronLeft,
+  IconChevronRight,
+  IconPlus,
+  IconPen,
+  IconClock,
+  IconTarget,
+  IconRepeat,
+  IconInbox,
+} from "./icons";
 
 type Tache = {
   id: string;
@@ -69,19 +83,17 @@ export default function JourClient({
     if (!noteSaved) enregistrerNote(note);
   }
 
-  const label = new Date(date + "T00:00:00").toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const d = new Date(date + "T00:00:00");
+  const label = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  const estAujourdhui = date === today;
 
-  function allerAu(d: string) {
-    router.push(`/jour?date=${d}`);
+  function allerAu(cible: string) {
+    router.push(`/jour?date=${cible}`);
   }
 
   async function toggle(id: string) {
     setJustToggled(id);
-    setTimeout(() => setJustToggled((cur) => (cur === id ? null : cur)), 320);
+    setTimeout(() => setJustToggled((cur) => (cur === id ? null : cur)), 460);
     await fetch(`/api/taches/${id}`, { method: "PATCH" });
     router.refresh();
   }
@@ -93,11 +105,12 @@ export default function JourClient({
 
   async function ignorer(id: string) {
     await fetch(`/api/taches/${id}/ignorer`, { method: "POST" });
+    showToast("Tâche ignorée");
     router.refresh();
   }
 
-  function formatDateCourte(d: string) {
-    return new Date(d + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  function formatDateCourte(iso: string) {
+    return new Date(iso + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   }
 
   async function ajouter() {
@@ -120,136 +133,257 @@ export default function JourClient({
   }
 
   const sorted = [...taches].sort((a, b) => (a.heure || "99:99").localeCompare(b.heure || "99:99"));
+  const faites = sorted.filter((t) => t.fait).length;
+  const pct = sorted.length > 0 ? Math.round((faites / sorted.length) * 100) : 0;
+  const reportees = sorted.filter((t) => t.reporteLe).length;
 
   function TaskRow({ t }: { t: Tache }) {
     const obj = objectifs.find((o) => o.id === t.objectifId);
     return (
       <div className={`task ${t.fait ? "done" : ""}`}>
-        <div className={`chk ${justToggled === t.id ? "chk-pop" : ""}`} onClick={() => toggle(t.id)}>
-          {t.fait ? "✓" : ""}
+        <div
+          className={`chk ${justToggled === t.id ? "chk-pop" : ""}`}
+          onClick={() => toggle(t.id)}
+          role="checkbox"
+          aria-checked={t.fait}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggle(t.id);
+            }
+          }}
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="m5 12.5 4.5 4.5L19 7" />
+          </svg>
         </div>
+
         <div className="txt">
           {t.texte}
-          {obj && <span className="obj-tag">🎯 {obj.nom}</span>}
-          {t.reporteLe && <span className="obj-tag">↩ reporté du {formatDateCourte(t.reporteLe)}</span>}
+          {(obj || t.reporteLe) && (
+            <div className="task-tags">
+              {obj && (
+                <span className="tag brand">
+                  <IconTarget style={{ width: 11, height: 11 }} />
+                  {obj.nom}
+                </span>
+              )}
+              {t.reporteLe && (
+                <span className="tag amber">
+                  <IconRepeat style={{ width: 11, height: 11 }} />
+                  reporté du {formatDateCourte(t.reporteLe)}
+                </span>
+              )}
+            </div>
+          )}
         </div>
+
         {t.heure && <div className="heure">{t.heure}</div>}
+
         {t.reporteLe && (
-          <button className="del" title="Ignorer" onClick={() => ignorer(t.id)}>
-            ⤫
+          <button className="btn btn-ghost btn-sm" onClick={() => ignorer(t.id)} title="Ne plus faire remonter">
+            Ignorer
           </button>
         )}
-        <button className="del" onClick={() => supprimer(t.id)}>×</button>
+        <button className="del" onClick={() => supprimer(t.id)} aria-label="Supprimer la tâche">
+          <IconX />
+        </button>
       </div>
     );
   }
 
   return (
     <>
-      <div className="card">
-        <div className="day-nav">
-          <button onClick={() => allerAu(prevDate)}>‹</button>
-          <div className="day-label">
+      <header className="page-head">
+        <div>
+          <h1 className="page-title" style={{ textTransform: "capitalize" }}>
             {label}
-            <span className="sub">{date === today ? "Aujourd'hui" : ""}</span>
-          </div>
-          <button onClick={() => allerAu(nextDate)}>›</button>
+          </h1>
+          <p className="page-sub">
+            {estAujourdhui ? "Aujourd'hui" : "Journée archivée"} ·{" "}
+            {sorted.length === 0 ? "aucune tâche" : `${faites} sur ${sorted.length} tâches cochées`}
+          </p>
         </div>
-
-        <div className="mode-toggle">
-          <button className={`mode-btn ${mode === "checklist" ? "active" : ""}`} onClick={() => setMode("checklist")}>
-            Checklist
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button className="btn btn-icon" onClick={() => allerAu(prevDate)} aria-label="Jour précédent">
+            <IconChevronLeft />
           </button>
-          <button className={`mode-btn ${mode === "planning" ? "active" : ""}`} onClick={() => setMode("planning")}>
-            Emploi du temps
+          {!estAujourdhui && (
+            <button className="btn" onClick={() => allerAu(today)}>
+              Aujourd&apos;hui
+            </button>
+          )}
+          <button className="btn btn-icon" onClick={() => allerAu(nextDate)} aria-label="Jour suivant">
+            <IconChevronRight />
           </button>
         </div>
+      </header>
 
-        {sorted.length === 0 ? (
-          <div className="empty">Aucune tâche ce jour.</div>
-        ) : mode === "checklist" ? (
-          <div>
-            {sorted.map((t) => (
-              <TaskRow key={t.id} t={t} />
-            ))}
+      <div className="grid g-main">
+        {/* ─── Colonne principale ─── */}
+        <section className="panel panel-pad-lg spot">
+          <div className="panel-head">
+            <div className="chip">
+              <IconCheck />
+            </div>
+            <div className="ph-text">
+              <h2>Tâches</h2>
+              <p>
+                {sorted.length} au programme{reportees > 0 ? ` · ${reportees} reportée${reportees > 1 ? "s" : ""}` : ""}
+              </p>
+            </div>
+            <div className="ph-right">
+              <Segmented
+                ariaLabel="Affichage des tâches"
+                value={mode}
+                onChange={setMode}
+                options={[
+                  { value: "checklist", label: "Liste" },
+                  { value: "planning", label: "Horaires" },
+                ]}
+              />
+            </div>
           </div>
-        ) : (
-          <div>
-            {sorted.filter((t) => !t.heure).length > 0 && (
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 10, color: "var(--ink-soft)", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>
-                  Sans horaire
-                </div>
-                {sorted.filter((t) => !t.heure).map((t) => (
-                  <TaskRow key={t.id} t={t} />
-                ))}
-              </div>
-            )}
-            {Array.from({ length: 18 }, (_, i) => i + 6).map((h) => {
-              const hh = String(h).padStart(2, "0");
-              const hTaches = sorted.filter((t) => t.heure?.startsWith(hh));
-              return (
-                <div className="schedule-row" key={hh}>
-                  <div className="schedule-hour">{hh}:00</div>
-                  <div className="schedule-line">
-                    {hTaches.map((t) => (
-                      <TaskRow key={t.id} t={t} />
-                    ))}
+
+          {sorted.length === 0 ? (
+            <div className="empty">
+              <IconInbox />
+              Rien de prévu ce jour-là. Ajoute une tâche depuis le panneau de droite.
+            </div>
+          ) : mode === "checklist" ? (
+            <div className="task-list">
+              {sorted.map((t) => (
+                <TaskRow key={t.id} t={t} />
+              ))}
+            </div>
+          ) : (
+            <div className="schedule">
+              {sorted.filter((t) => !t.heure).length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <div className="eyebrow" style={{ marginBottom: 7 }}>
+                    Sans horaire
+                  </div>
+                  <div className="task-list">
+                    {sorted
+                      .filter((t) => !t.heure)
+                      .map((t) => (
+                        <TaskRow key={t.id} t={t} />
+                      ))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              )}
+              {Array.from({ length: 18 }, (_, i) => i + 6).map((h) => {
+                const hh = String(h).padStart(2, "0");
+                const hTaches = sorted.filter((t) => t.heure?.startsWith(hh));
+                return (
+                  <div className="schedule-row" key={hh}>
+                    <div className="schedule-hour">{hh}:00</div>
+                    <div className="schedule-line">
+                      {hTaches.map((t) => (
+                        <TaskRow key={t.id} t={t} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
-      <div className="card">
-        <h2>
-          Note du jour
-          <span className="note-status">{noteSaved ? "" : "…"}</span>
-        </h2>
-        <textarea
-          className="note-textarea"
-          placeholder="Comment s'est passée cette journée ?"
-          rows={3}
-          value={note}
-          onChange={(e) => onNoteChange(e.target.value)}
-          onBlur={onNoteBlur}
-        />
-      </div>
+        {/* ─── Colonne latérale ─── */}
+        <div className="stack">
+          <section className="panel panel-hero spot">
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <ProgressRing value={pct} size={86} stroke={9} color={pct >= 100 ? "#0ea98f" : "#1d7fe0"} colorSoft={pct >= 100 ? "#3ed0b6" : "#4aa3f5"}>
+                <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.03em" }}>{pct}%</span>
+              </ProgressRing>
+              <div style={{ minWidth: 0 }}>
+                <div className="eyebrow">Avancement du jour</div>
+                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", marginTop: 5, lineHeight: 1.1 }}>
+                  {faites} / {sorted.length || 0}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
+                  {sorted.length === 0
+                    ? "aucune tâche"
+                    : pct >= 100
+                      ? "journée bouclée"
+                      : `${sorted.length - faites} restante${sorted.length - faites > 1 ? "s" : ""}`}
+                </div>
+              </div>
+            </div>
+          </section>
 
-      <div className="card">
-        <h2>Ajouter une tâche</h2>
-        <div className="row">
-          <div className="field" style={{ flex: 3 }}>
-            <label htmlFor="t-texte">Description</label>
-            <input
-              id="t-texte"
-              type="text"
-              placeholder="Ex : appeler le comptable"
-              value={texte}
-              onChange={(e) => setTexte(e.target.value)}
+          <section className="panel spot">
+            <div className="panel-head">
+              <div className="chip violet">
+                <IconPen />
+              </div>
+              <div className="ph-text">
+                <h2>Note du jour</h2>
+                <p>{noteSaved ? "Enregistrée automatiquement" : "Enregistrement…"}</p>
+              </div>
+            </div>
+            <textarea
+              placeholder="Comment s'est passée cette journée ?"
+              rows={4}
+              value={note}
+              onChange={(e) => onNoteChange(e.target.value)}
+              onBlur={onNoteBlur}
             />
-          </div>
-          <div className="field small">
-            <label htmlFor="t-heure">Heure (opt.)</label>
-            <input id="t-heure" type="time" value={heure} onChange={(e) => setHeure(e.target.value)} />
-          </div>
+          </section>
+
+          <section className="panel spot">
+            <div className="panel-head">
+              <div className="chip teal">
+                <IconPlus />
+              </div>
+              <div className="ph-text">
+                <h2>Ajouter une tâche</h2>
+                <p>Elle sera posée sur cette journée</p>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="field">
+                <label htmlFor="t-texte">Description</label>
+                <input
+                  id="t-texte"
+                  type="text"
+                  placeholder="Ex : appeler le comptable"
+                  value={texte}
+                  onChange={(e) => setTexte(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") ajouter();
+                  }}
+                />
+              </div>
+            </div>
+            <div className="row">
+              <div className="field small">
+                <label htmlFor="t-heure">
+                  <IconClock style={{ width: 11, height: 11, display: "inline", verticalAlign: "-1px" }} /> Heure
+                </label>
+                <input id="t-heure" type="time" value={heure} onChange={(e) => setHeure(e.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="t-objectif">Objectif lié</label>
+                <select id="t-objectif" value={objectifId} onChange={(e) => setObjectifId(e.target.value)}>
+                  <option value="">— aucun —</option>
+                  {objectifs.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.nom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button className="btn-primary" onClick={ajouter} disabled={saving}>
+              <IconPlus style={{ width: 15, height: 15 }} />
+              {saving ? "Ajout…" : "Ajouter la tâche"}
+            </button>
+          </section>
         </div>
-        <div className="row">
-          <div className="field">
-            <label htmlFor="t-objectif">Objectif lié (opt.)</label>
-            <select id="t-objectif" value={objectifId} onChange={(e) => setObjectifId(e.target.value)}>
-              <option value="">— aucun —</option>
-              {objectifs.map((o) => (
-                <option key={o.id} value={o.id}>{o.nom}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <button className="btn-primary" onClick={ajouter} disabled={saving}>
-          {saving ? "Ajout…" : "Ajouter la tâche"}
-        </button>
       </div>
     </>
   );

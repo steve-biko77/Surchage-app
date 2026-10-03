@@ -25,5 +25,25 @@ export default async function ObjectifsPage() {
     };
   });
 
-  return <ObjectifsClient initialObjectifs={objectifs} />;
+  const moyenne =
+    objectifs.length > 0
+      ? Math.round(objectifs.reduce((s, o) => s + o.progression, 0) / objectifs.length)
+      : 0;
+
+  return (
+    <>
+      <header className="page-head">
+        <div>
+          <h1 className="page-title">Objectifs</h1>
+          <p className="page-sub">
+            {objectifs.length === 0
+              ? "Rien à viser pour l'instant."
+              : `${objectifs.length} objectif${objectifs.length > 1 ? "s" : ""} suivi${objectifs.length > 1 ? "s" : ""} · ${moyenne}% de progression moyenne.`}
+          </p>
+        </div>
+      </header>
+
+      <ObjectifsClient initialObjectifs={objectifs} />
+    </>
+  );
 }

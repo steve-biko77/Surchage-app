@@ -1,20 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
-import TabNav from "@/components/TabNav";
+import { Sidebar, MobileBar } from "@/components/Nav";
 import ToastHost from "@/components/ToastHost";
 import InstallBanner from "@/components/InstallBanner";
 import OpeningSequence from "@/components/OpeningSequence";
+import SpotlightLayer from "@/components/SpotlightLayer";
 
-const fraunces = Fraunces({
+const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["italic", "normal"],
+  weight: ["600", "700", "800"],
   variable: "--font-display",
   display: "swap",
 });
 
-const inter = Inter({
+const sans = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Journal",
   },
   other: {
@@ -42,24 +42,23 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0e1a",
+  themeColor: "#eef4fb",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="fr" className={`${display.variable} ${sans.variable}`}>
       <body>
         <OpeningSequence />
-        <div className="wrap">
-          <div className="brand">
-            <h1>Journal</h1>
+        <SpotlightLayer />
+        <div className="app">
+          <Sidebar />
+          <div className="content">
+            <InstallBanner />
+            {children}
           </div>
-          <p className="subtitle">Tâches, semaine, disciplines qui se suivent tout seuls, objectifs concrets.</p>
-          <div className="header-rule" />
-          <InstallBanner />
-          <main>{children}</main>
         </div>
-        <TabNav />
+        <MobileBar />
         <ToastHost />
       </body>
     </html>
