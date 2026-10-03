@@ -3,7 +3,6 @@ import "./globals.css";
 import TabNav from "@/components/TabNav";
 import ToastHost from "@/components/ToastHost";
 import InstallBanner from "@/components/InstallBanner";
-import PushSubscribe from "@/components/PushSubscribe";
 
 export const metadata: Metadata = {
   title: "Journal — Organisation & Disciplines",
@@ -40,7 +39,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
           <p className="subtitle">Tâches, semaine, disciplines qui se suivent tout seuls, objectifs concrets.</p>
           <InstallBanner />
-          <PushSubscribe />
           <TabNav />
           <main>{children}</main>
         </div>

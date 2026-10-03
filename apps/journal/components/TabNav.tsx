@@ -7,6 +7,7 @@ const TABS = [
   { href: "/semaine", label: "Semaine" },
   { href: "/disciplines", label: "Disciplines" },
   { href: "/objectifs", label: "Objectifs" },
+  { href: "/recurrentes", label: "Récurrentes" },
   { href: "/journal", label: "Journal" },
 ];
 

@@ -5,8 +5,10 @@ import {
   joursValides,
   objectifs,
   taches,
+  tachesRecurrentes,
   notesJour,
-  pushSubscriptions,
+  googleAuth,
+  journalCalendar,
   nudgeState,
 } from "../db/schema";
 import { eq, and, gte, lte, desc, isNotNull } from "drizzle-orm";
@@ -115,9 +117,23 @@ export const tachesRepository = {
   async entreDates(dateDebut: string, dateFin: string) {
     return db.select().from(taches).where(and(gte(taches.date, dateDebut), lte(taches.date, dateFin)));
   },
-  async create(input: { date: string; texte: string; heure?: string | null; objectifId?: string | null }) {
+  async create(input: {
+    date: string;
+    texte: string;
+    heure?: string | null;
+    objectifId?: string | null;
+    tacheRecurrenteId?: string | null;
+  }) {
     const [row] = await db.insert(taches).values(input).returning();
     return row;
+  },
+  /** Vrai si cette tache recurrente a deja ete materialisee pour cette date (idempotence). */
+  async existeDejaPourRecurrence(tacheRecurrenteId: string, date: string) {
+    const [row] = await db
+      .select()
+      .from(taches)
+      .where(and(eq(taches.tacheRecurrenteId, tacheRecurrenteId), eq(taches.date, date)));
+    return !!row;
   },
   async toggleFait(id: string) {
     const [existant] = await db.select().from(taches).where(eq(taches.id, id));
@@ -128,6 +144,32 @@ export const tachesRepository = {
   },
   async delete(id: string) {
     await db.delete(taches).where(eq(taches.id, id));
+  },
+};
+
+export const tachesRecurrentesRepository = {
+  async all() {
+    return db.select().from(tachesRecurrentes);
+  },
+  async actives() {
+    return db.select().from(tachesRecurrentes).where(eq(tachesRecurrentes.actif, true));
+  },
+  async create(input: {
+    texte: string;
+    frequence: "journaliere" | "hebdomadaire";
+    joursSemaine: number[];
+    heure?: string | null;
+    objectifId?: string | null;
+  }) {
+    const [row] = await db.insert(tachesRecurrentes).values(input).returning();
+    return row;
+  },
+  async setActif(id: string, actif: boolean) {
+    const [row] = await db.update(tachesRecurrentes).set({ actif }).where(eq(tachesRecurrentes.id, id)).returning();
+    return row;
+  },
+  async delete(id: string) {
+    await db.delete(tachesRecurrentes).where(eq(tachesRecurrentes.id, id));
   },
 };
 
@@ -155,21 +197,35 @@ export const notesJourRepository = {
   },
 };
 
-export const pushSubscriptionsRepository = {
-  async all() {
-    return db.select().from(pushSubscriptions);
+export const googleAuthRepository = {
+  async get() {
+    const [row] = await db.select().from(googleAuth);
+    return row ?? null;
   },
-  async enregistrer(input: { endpoint: string; p256dh: string; auth: string }) {
-    const [existante] = await db
-      .select()
-      .from(pushSubscriptions)
-      .where(eq(pushSubscriptions.endpoint, input.endpoint));
-    if (existante) return existante;
-    const [row] = await db.insert(pushSubscriptions).values(input).returning();
+  /** Une seule ligne : upsert le refresh_token recu a la connexion Google. */
+  async enregistrerRefreshToken(refreshToken: string) {
+    const existant = await googleAuthRepository.get();
+    if (existant) {
+      const [row] = await db
+        .update(googleAuth)
+        .set({ refreshToken })
+        .where(eq(googleAuth.id, existant.id))
+        .returning();
+      return row;
+    }
+    const [row] = await db.insert(googleAuth).values({ refreshToken }).returning();
     return row;
   },
-  async supprimer(endpoint: string) {
-    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+};
+
+export const journalCalendarRepository = {
+  async get() {
+    const [row] = await db.select().from(journalCalendar);
+    return row ?? null;
+  },
+  async enregistrer(googleCalendarId: string) {
+    const [row] = await db.insert(journalCalendar).values({ googleCalendarId }).returning();
+    return row;
   },
 };
 
