@@ -44,3 +44,29 @@ export class ObjectifPerformance extends Objectif {
     return `${this.meilleurPoidsAtteint} / ${this.poidsCible} kg`;
   }
 }
+
+/** Objectif a metrique libre (Elo, pages lues, km, kg...) -- generalisation d'ObjectifPerformance. */
+export class ObjectifMetrique extends Objectif {
+  constructor(
+    id: string, nom: string, disciplineId: string, deadline: string | null,
+    private unite: string,
+    private valeurDepart: number,
+    private valeurCible: number,
+    private valeurActuelle: number,
+    private sens: "croissant" | "decroissant" = "croissant",
+  ) { super(id, nom, disciplineId, deadline); }
+
+  calculerProgression(): number {
+    const [depart, cible, actuelle] = [this.valeurDepart, this.valeurCible, this.valeurActuelle];
+    if (this.sens === "croissant") {
+      if (cible === depart) return actuelle >= cible ? 100 : 0;
+      return Math.max(0, Math.min(100, Math.round((actuelle - depart) / (cible - depart) * 100)));
+    } else {
+      if (depart === cible) return actuelle <= cible ? 100 : 0;
+      return Math.max(0, Math.min(100, Math.round((depart - actuelle) / (depart - cible) * 100)));
+    }
+  }
+  describeUnite(): string {
+    return `${this.valeurActuelle} / ${this.valeurCible} ${this.unite}`;
+  }
+}

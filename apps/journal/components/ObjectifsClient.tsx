@@ -3,7 +3,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/lib/toast";
 
-type TypeObjectif = "temps" | "performance";
+type TypeObjectif = "temps" | "metrique";
+type Sens = "croissant" | "decroissant";
 
 type Objectif = {
   id: string;
@@ -12,8 +13,9 @@ type Objectif = {
   deadline: string | null;
   heuresCible: number | null;
   minutesInvesties: number;
-  poidsCible: number | null;
-  meilleurPoidsAtteint: number | null;
+  rawUnite: string | null;
+  valeurCible: number | null;
+  valeurActuelle: number | null;
   progression: number;
   unite: string;
 };
@@ -23,10 +25,13 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
   const [type, setType] = useState<TypeObjectif>("temps");
   const [nom, setNom] = useState("");
   const [heures, setHeures] = useState(20);
-  const [poids, setPoids] = useState(50);
+  const [uniteLibre, setUniteLibre] = useState("");
+  const [valeurDepart, setValeurDepart] = useState(0);
+  const [valeurCible, setValeurCible] = useState(100);
+  const [sens, setSens] = useState<Sens>("croissant");
   const [deadline, setDeadline] = useState("");
   const [saving, setSaving] = useState(false);
-  const [poidsInputs, setPoidsInputs] = useState<Record<string, string>>({});
+  const [valeurInputs, setValeurInputs] = useState<Record<string, string>>({});
 
   async function creer() {
     if (!nom) {
@@ -34,7 +39,10 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
       return;
     }
     if (type === "temps" && !heures) return;
-    if (type === "performance" && !poids) return;
+    if (type === "metrique" && (!uniteLibre || valeurCible == null)) {
+      showToast("Precise l'unite et la valeur cible");
+      return;
+    }
 
     setSaving(true);
     await fetch("/api/objectifs", {
@@ -43,12 +51,15 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
       body: JSON.stringify(
         type === "temps"
           ? { nom, disciplineId: null, heuresCible: heures, deadline: deadline || null, type }
-          : { nom, disciplineId: null, deadline: deadline || null, type, poidsCible: poids }
+          : { nom, disciplineId: null, deadline: deadline || null, type, unite: uniteLibre, valeurDepart, valeurCible, sens }
       ),
     });
     setNom("");
     setHeures(20);
-    setPoids(50);
+    setUniteLibre("");
+    setValeurDepart(0);
+    setValeurCible(100);
+    setSens("croissant");
     setDeadline("");
     setSaving(false);
     showToast("Objectif créé");
@@ -64,13 +75,13 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
     router.refresh();
   }
 
-  async function mettreAJourPoids(id: string) {
-    const valeur = parseFloat(poidsInputs[id]);
-    if (!valeur || valeur < 0) return;
-    await fetch(`/api/objectifs/${id}/poids`, {
+  async function mettreAJourValeur(id: string) {
+    const valeur = parseFloat(valeurInputs[id]);
+    if (Number.isNaN(valeur)) return;
+    await fetch(`/api/objectifs/${id}/valeur`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ poids: valeur }),
+      body: JSON.stringify({ valeur }),
     });
     showToast("Progression mise à jour");
     router.refresh();
@@ -93,12 +104,12 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
                 <span
                   className="obj-type-badge"
                   style={{
-                    background: o.type === "performance" ? "#2C8FE022" : "#FFB02022",
-                    color: o.type === "performance" ? "var(--blue-deep)" : "var(--sun)",
+                    background: o.type === "metrique" ? "#2C8FE022" : "#FFB02022",
+                    color: o.type === "metrique" ? "var(--blue-deep)" : "var(--sun)",
                     marginRight: 6,
                   }}
                 >
-                  {o.type === "performance" ? "Perf" : "Temps"}
+                  {o.type === "metrique" ? (o.rawUnite || "Metrique") : "Temps"}
                 </span>
                 {o.nom}
               </div>
@@ -127,18 +138,18 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
             ) : (
               <div className="row" style={{ marginTop: 10, alignItems: "flex-end" }}>
                 <div className="field small">
-                  <label htmlFor={`poids-${o.id}`}>Nouveau record (kg)</label>
+                  <label htmlFor={`valeur-${o.id}`}>Nouvelle valeur ({o.rawUnite})</label>
                   <input
-                    id={`poids-${o.id}`}
+                    id={`valeur-${o.id}`}
                     type="number"
                     step="0.5"
                     inputMode="decimal"
-                    placeholder={String(o.meilleurPoidsAtteint ?? 0)}
-                    value={poidsInputs[o.id] ?? ""}
-                    onChange={(e) => setPoidsInputs((prev) => ({ ...prev, [o.id]: e.target.value }))}
+                    placeholder={String(o.valeurActuelle ?? 0)}
+                    value={valeurInputs[o.id] ?? ""}
+                    onChange={(e) => setValeurInputs((prev) => ({ ...prev, [o.id]: e.target.value }))}
                   />
                 </div>
-                <button type="button" className="mode-btn active" style={{ flex: "0 0 auto", padding: "9px 14px" }} onClick={() => mettreAJourPoids(o.id)}>
+                <button type="button" className="mode-btn active" style={{ flex: "0 0 auto", padding: "9px 14px" }} onClick={() => mettreAJourValeur(o.id)}>
                   Mettre à jour
                 </button>
               </div>
@@ -151,7 +162,7 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
         <h2>Nouvel objectif</h2>
         <div className="mode-toggle" role="radiogroup" aria-label="Type d'objectif">
           <button className={`mode-btn ${type === "temps" ? "active" : ""}`} onClick={() => setType("temps")}>Temps</button>
-          <button className={`mode-btn ${type === "performance" ? "active" : ""}`} onClick={() => setType("performance")}>Performance</button>
+          <button className={`mode-btn ${type === "metrique" ? "active" : ""}`} onClick={() => setType("metrique")}>Métrique libre</button>
         </div>
 
         <div className="row">
@@ -173,16 +184,32 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
             </div>
           </div>
         ) : (
-          <div className="row">
-            <div className="field">
-              <label htmlFor="o-poids">Poids cible (kg)</label>
-              <input id="o-poids" type="number" step="0.5" inputMode="decimal" value={poids} onChange={(e) => setPoids(parseFloat(e.target.value) || 0)} />
+          <>
+            <div className="row">
+              <div className="field">
+                <label htmlFor="o-unite">Unité</label>
+                <input id="o-unite" type="text" placeholder="Ex : Elo, pages, km" value={uniteLibre} onChange={(e) => setUniteLibre(e.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="o-deadline-metrique">Échéance</label>
+                <input id="o-deadline-metrique" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+              </div>
             </div>
-            <div className="field">
-              <label htmlFor="o-deadline-perf">Échéance</label>
-              <input id="o-deadline-perf" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+            <div className="row">
+              <div className="field">
+                <label htmlFor="o-valeur-depart">Valeur de départ</label>
+                <input id="o-valeur-depart" type="number" step="0.5" inputMode="decimal" value={valeurDepart} onChange={(e) => setValeurDepart(parseFloat(e.target.value) || 0)} />
+              </div>
+              <div className="field">
+                <label htmlFor="o-valeur-cible">Valeur cible</label>
+                <input id="o-valeur-cible" type="number" step="0.5" inputMode="decimal" value={valeurCible} onChange={(e) => setValeurCible(parseFloat(e.target.value) || 0)} />
+              </div>
             </div>
-          </div>
+            <div className="mode-toggle" role="radiogroup" aria-label="Sens de progression">
+              <button className={`mode-btn ${sens === "croissant" ? "active" : ""}`} onClick={() => setSens("croissant")}>Croissant</button>
+              <button className={`mode-btn ${sens === "decroissant" ? "active" : ""}`} onClick={() => setSens("decroissant")}>Décroissant</button>
+            </div>
+          </>
         )}
 
         <button className="btn-primary" onClick={creer} disabled={saving}>

@@ -9,6 +9,7 @@ const TABS = [
   { href: "/objectifs", label: "Objectifs" },
   { href: "/recurrentes", label: "Récurrentes" },
   { href: "/journal", label: "Journal" },
+  { href: "/rapport", label: "Rapport" },
 ];
 
 export default function TabNav() {

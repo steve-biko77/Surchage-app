@@ -11,7 +11,7 @@ import {
   journalCalendar,
   nudgeState,
 } from "../db/schema";
-import { eq, and, gte, lte, desc, isNotNull } from "drizzle-orm";
+import { eq, and, gte, lte, lt, desc, isNotNull } from "drizzle-orm";
 
 export const disciplinesRepository = {
   async all() {
@@ -82,11 +82,15 @@ export const objectifsRepository = {
   },
   async create(input: {
     nom: string;
-    type: "temps" | "performance";
+    type: "temps" | "metrique";
     disciplineId: string | null;
     deadline?: string | null;
     heuresCible?: number | null;
-    poidsCible?: number | null;
+    unite?: string | null;
+    valeurDepart?: number | null;
+    valeurCible?: number | null;
+    valeurActuelle?: number | null;
+    sens?: "croissant" | "decroissant" | null;
   }) {
     const [row] = await db.insert(objectifs).values(input).returning();
     return row;
@@ -101,8 +105,8 @@ export const objectifsRepository = {
       .returning();
     return row;
   },
-  async setMeilleurPoidsAtteint(id: string, poids: number) {
-    const [row] = await db.update(objectifs).set({ meilleurPoidsAtteint: poids }).where(eq(objectifs.id, id)).returning();
+  async setValeurActuelle(id: string, valeur: number) {
+    const [row] = await db.update(objectifs).set({ valeurActuelle: valeur }).where(eq(objectifs.id, id)).returning();
     return row;
   },
   async delete(id: string) {
@@ -134,6 +138,18 @@ export const tachesRepository = {
       .from(taches)
       .where(and(eq(taches.tacheRecurrenteId, tacheRecurrenteId), eq(taches.date, date)));
     return !!row;
+  },
+  /** Taches non faites et non ignorees d'avant `date` -- a fusionner dans l'affichage du jour reel. */
+  async reporteesAvant(date: string) {
+    return db
+      .select()
+      .from(taches)
+      .where(and(lt(taches.date, date), eq(taches.fait, false), eq(taches.ignoree, false)));
+  },
+  /** Ecarte definitivement une tache reportee sans effacer qu'elle a existe. */
+  async ignorer(id: string) {
+    const [row] = await db.update(taches).set({ ignoree: true }).where(eq(taches.id, id)).returning();
+    return row;
   },
   async toggleFait(id: string) {
     const [existant] = await db.select().from(taches).where(eq(taches.id, id));

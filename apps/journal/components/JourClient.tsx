@@ -10,6 +10,7 @@ type Tache = {
   heure: string | null;
   fait: boolean;
   objectifId: string | null;
+  reporteLe: string | null;
 };
 type ObjectifOption = { id: string; nom: string };
 
@@ -90,6 +91,15 @@ export default function JourClient({
     router.refresh();
   }
 
+  async function ignorer(id: string) {
+    await fetch(`/api/taches/${id}/ignorer`, { method: "POST" });
+    router.refresh();
+  }
+
+  function formatDateCourte(d: string) {
+    return new Date(d + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  }
+
   async function ajouter() {
     if (!texte.trim()) {
       showToast("Décris la tâche");
@@ -121,8 +131,14 @@ export default function JourClient({
         <div className="txt">
           {t.texte}
           {obj && <span className="obj-tag">🎯 {obj.nom}</span>}
+          {t.reporteLe && <span className="obj-tag">↩ reporté du {formatDateCourte(t.reporteLe)}</span>}
         </div>
         {t.heure && <div className="heure">{t.heure}</div>}
+        {t.reporteLe && (
+          <button className="del" title="Ignorer" onClick={() => ignorer(t.id)}>
+            ⤫
+          </button>
+        )}
         <button className="del" onClick={() => supprimer(t.id)}>×</button>
       </div>
     );

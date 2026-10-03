@@ -56,6 +56,17 @@ export function jourSemaineISO(dateISO: string): number {
   return jour === 0 ? 7 : jour;
 }
 
+/** Toutes les dates ISO entre dateDebut et dateFin inclus. */
+export function enumererDates(dateDebut: string, dateFin: string): string[] {
+  const dates: string[] = [];
+  let cursor = dateDebut;
+  while (cursor <= dateFin) {
+    dates.push(cursor);
+    cursor = decalerDate(cursor, 1);
+  }
+  return dates;
+}
+
 /** Lundi de la semaine ISO contenant la date donnee. */
 export function debutSemaine(dateISO: string): string {
   const [y, m, d] = dateISO.split("-").map(Number);
