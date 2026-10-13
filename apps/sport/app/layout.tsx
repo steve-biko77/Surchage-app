@@ -29,11 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased">
         <div className="max-w-xl mx-auto px-4 pb-28 pt-6">
           <header className="mb-6 flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-[#ff7a45] to-[#c2410c] shadow-[0_4px_16px_-4px_rgba(255,90,31,0.5)]">
-              <Dumbbell className="h-5 w-5 text-[#1a0d05]" strokeWidth={2.5} aria-hidden="true" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-[var(--accent-soft)] to-[var(--accent-deep)] shadow-[0_4px_16px_-4px_rgba(var(--accent-rgb),0.5)]">
+              <Dumbbell className="h-5 w-5 text-[var(--on-accent)]" strokeWidth={2.5} aria-hidden="true" />
             </div>
             <div>
-              <h1 className="font-heading text-2xl font-extrabold uppercase tracking-wide leading-none bg-gradient-to-b from-white to-[#FF5A1F] bg-clip-text text-transparent">
+              <h1 className="font-heading text-2xl font-extrabold uppercase tracking-wide leading-none bg-gradient-to-b from-white to-[var(--accent)] bg-clip-text text-transparent">
                 Surcharge
               </h1>
               <p className="text-[11px] text-[var(--grey)] uppercase tracking-widest">Module Sport</p>

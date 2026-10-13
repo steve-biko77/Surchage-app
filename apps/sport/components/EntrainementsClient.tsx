@@ -273,7 +273,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
               onClick={() => planifier(j.iso)}
               style={{ touchAction: "manipulation" }}
               className={`flex h-16 w-12 shrink-0 flex-col items-center justify-center rounded-xl border text-xs transition-colors disabled:opacity-40 active:scale-95 border-[var(--card-border)] bg-[var(--bg-card)] ${
-                j.estAujourdhui ? "border-[#FF5A1F]/60" : ""
+                j.estAujourdhui ? "border-[var(--accent)]/60" : ""
               }`}
             >
               <span className="uppercase text-[var(--grey)]">{j.label}</span>
@@ -302,7 +302,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
       </div>
 
       <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
-        <Button variant={filtreGroupe === "tous" ? "pill" : "ghost"} size="sm" onClick={() => setFiltreGroupe("tous")} className={filtreGroupe === "tous" ? "border-[#FF5A1F] text-[#FF5A1F]" : ""}>
+        <Button variant={filtreGroupe === "tous" ? "pill" : "ghost"} size="sm" onClick={() => setFiltreGroupe("tous")} className={filtreGroupe === "tous" ? "border-[var(--accent)] text-[var(--accent-text)]" : ""}>
           Tous
         </Button>
         {GROUPES.map((g) => (
@@ -311,7 +311,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
             variant={filtreGroupe === g ? "pill" : "ghost"}
             size="sm"
             onClick={() => setFiltreGroupe(g)}
-            className={`shrink-0 capitalize ${filtreGroupe === g ? "border-[#FF5A1F] text-[#FF5A1F]" : ""}`}
+            className={`shrink-0 capitalize ${filtreGroupe === g ? "border-[var(--accent)] text-[var(--accent-text)]" : ""}`}
           >
             {g}
           </Button>
@@ -319,9 +319,9 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
       </div>
 
       {showNouvelExercice && (
-        <Card className="mb-3 border-[#FF5A1F]/40">
+        <Card className="mb-3 border-[var(--accent)]/40">
           <CardContent className="pt-4">
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#FF5A1F]">Nouvel exercice</h3>
+            <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--accent-text)]">Nouvel exercice</h3>
             <input placeholder="Nom de l'exercice" value={nomExo} onChange={(e) => setNomExo(e.target.value)} className="mb-2 w-full text-sm" />
             <div className="mb-2 grid grid-cols-2 gap-2">
               <div>
@@ -351,7 +351,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
                 role="radio"
                 aria-checked={uniteMesureExo === "repetitions"}
                 onClick={() => setUniteMesureExo("repetitions")}
-                className={`rounded-lg border py-2 text-xs font-medium ${uniteMesureExo === "repetitions" ? "border-[#FF5A1F] bg-[#2a1c10] text-[#FF5A1F]" : "border-[var(--steel)] text-[var(--grey)]"}`}
+                className={`rounded-lg border py-2 text-xs font-medium ${uniteMesureExo === "repetitions" ? "border-[var(--accent)] bg-[var(--accent-wash)] text-[var(--accent-text)]" : "border-[var(--steel)] text-[var(--grey)]"}`}
               >
                 Répétitions
               </button>
@@ -395,7 +395,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
       {exercicesFiltres.map((e) => {
         const dejaAjoute = composition.includes(e.id);
         return (
-          <Card key={e.id} className={`mb-2 ${dejaAjoute ? "border-[#FF5A1F]/50" : ""}`}>
+          <Card key={e.id} className={`mb-2 ${dejaAjoute ? "border-[var(--accent)]/50" : ""}`}>
             <div className="flex items-center gap-3 p-3">
               <Link href={`/exercices/${e.id}`} aria-label={`Voir la fiche de ${e.nom}`}>
                 <MuscleSilhouette groupe={e.groupeMusculaire} />

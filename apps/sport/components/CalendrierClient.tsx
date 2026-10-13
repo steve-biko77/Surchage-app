@@ -11,7 +11,7 @@ const CELL_STYLES = [
   "bg-[var(--bg-card)]",
   "bg-[#2a2210]",
   "bg-[#3a2410]",
-  "bg-[#4a2308] shadow-[0_0_8px_rgba(255,90,31,0.35)]",
+  "bg-[#4a2308] shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)]",
 ];
 
 type SeancePlanifiee = { id: string; date: string; nom: string; statut: "planifiee" | "realisee" };
@@ -90,10 +90,10 @@ export default function CalendrierClient() {
                 title={planifiee ? planifiee.nom : undefined}
                 className={`flex h-16 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] ${
                   niveau > 0 ? CELL_STYLES[niveau] : "bg-[var(--bg-card)]"
-                } ${planifiee ? "border-dashed border-[#3B82C4]" : j.estAujourdhui ? "border-[#FF5A1F]/60" : "border-[var(--card-border)]"}`}
+                } ${planifiee ? "border-dashed border-[#3B82C4]" : j.estAujourdhui ? "border-[var(--accent)]/60" : "border-[var(--card-border)]"}`}
               >
                 {niveau > 0 ? (
-                  <Flame className="h-3 w-3 text-[#FF5A1F]" fill="#FF5A1F" aria-hidden="true" />
+                  <Flame className="h-3 w-3 text-[var(--accent-text)]" fill="var(--accent)" aria-hidden="true" />
                 ) : planifiee ? (
                   <CalendarClock className="h-3 w-3 text-[#3B82C4]" aria-hidden="true" />
                 ) : (
@@ -130,10 +130,10 @@ export default function CalendrierClient() {
               title={planifiee ? planifiee.nom : undefined}
               className={`flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] ${
                 niveau > 0 ? CELL_STYLES[niveau] : "bg-[var(--bg-card)]"
-              } ${planifiee ? "border-dashed border-[#3B82C4]" : isToday ? "border-[#FF5A1F]" : "border-transparent"}`}
+              } ${planifiee ? "border-dashed border-[#3B82C4]" : isToday ? "border-[var(--accent)]" : "border-transparent"}`}
             >
               {niveau > 0 ? (
-                <Flame className="h-3 w-3 text-[#FF5A1F]" fill="#FF5A1F" aria-hidden="true" />
+                <Flame className="h-3 w-3 text-[var(--accent-text)]" fill="var(--accent)" aria-hidden="true" />
               ) : planifiee ? (
                 <CalendarClock className="h-3 w-3 text-[#3B82C4]" aria-hidden="true" />
               ) : (

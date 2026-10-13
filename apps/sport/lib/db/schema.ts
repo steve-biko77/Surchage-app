@@ -6,7 +6,7 @@ import { pgTable, text, real, integer, boolean, timestamp, uuid, primaryKey } fr
 export const disciplines = pgTable("disciplines", {
   id: uuid("id").defaultRandom().primaryKey(),
   nom: text("nom").notNull(),
-  couleur: text("couleur").notNull().default("#FF5A1F"),
+  couleur: text("couleur").notNull().default("#4C6FFF"),
 });
 
 export const objectifs = pgTable("objectifs", {

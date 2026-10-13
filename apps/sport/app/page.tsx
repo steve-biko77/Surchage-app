@@ -44,7 +44,7 @@ export default async function SeanceDuJourPage() {
         <MuscleMap volumeParGroupe={volumeParGroupe} />
         <div className="mt-4 rounded-2xl border border-[var(--card-border)] bg-[var(--bg-card)] py-12 text-center text-[var(--grey)]">
           <p className="mb-2 text-base">
-            Aucun programme configuré pour <b className="capitalize text-[#FF5A1F]">{jour}</b>.
+            Aucun programme configuré pour <b className="capitalize text-[var(--accent-text)]">{jour}</b>.
           </p>
           <p className="text-sm">Configure ton split hebdomadaire pour que la séance du jour apparaisse ici automatiquement.</p>
         </div>
@@ -81,7 +81,7 @@ export default async function SeanceDuJourPage() {
           className="mb-4 flex items-center justify-between gap-2 rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] px-3 py-2.5 text-sm"
         >
           <span className="flex items-center gap-2">
-            <ListChecks className="h-4 w-4 text-[#FF5A1F]" aria-hidden="true" />
+            <ListChecks className="h-4 w-4 text-[var(--accent-text)]" aria-hidden="true" />
             Progression : <b>{nbCompletes} / {exercicesAvecCible.length}</b> exercices
           </span>
           <span className="text-xs text-[#3B82C4]">Voir tout →</span>
@@ -89,8 +89,8 @@ export default async function SeanceDuJourPage() {
       )}
 
       {objectifDuJour && (
-        <div className="mb-4 flex items-start gap-2 rounded-xl border-l-2 border-[#FF5A1F] bg-gradient-to-r from-[#2a1c10] to-transparent px-3 py-2.5 text-sm text-[#ffd8c2]">
-          <Target className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5A1F]" aria-hidden="true" />
+        <div className="mb-4 flex items-start gap-2 rounded-xl border-l-2 border-[var(--accent)] bg-gradient-to-r from-[var(--accent-wash)] to-transparent px-3 py-2.5 text-sm text-[#ffd8c2]">
+          <Target className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
           <span><b>Objectif du jour :</b> {objectifDuJour.texte}</span>
         </div>
       )}

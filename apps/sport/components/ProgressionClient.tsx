@@ -100,7 +100,7 @@ export default function ProgressionClient({ exercices }: { exercices: Exercice[]
                   onClick={() => setMetrique(m)}
                   className={cn(
                     buttonVariants({ variant: "pill", size: "sm" }),
-                    metrique === m && "border-[#FF5A1F] text-[#FF5A1F] bg-[#2a1c10]"
+                    metrique === m && "border-[var(--accent)] text-[var(--accent-text)] bg-[var(--accent-wash)]"
                   )}
                 >
                   {METRIQUE_LABEL[m]}
@@ -120,7 +120,7 @@ export default function ProgressionClient({ exercices }: { exercices: Exercice[]
                     labelStyle={{ color: "#8b8d98" }}
                     formatter={(value) => [formatValeur(Number(value), metrique), METRIQUE_LABEL[metrique]]}
                   />
-                  <Line type="monotone" dataKey="value" stroke="#FF5A1F" strokeWidth={2.5} dot={{ fill: "#FF5A1F", r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} />
+                  <Line type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={2.5} dot={{ fill: "var(--accent)", r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
