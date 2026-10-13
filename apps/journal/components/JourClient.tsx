@@ -160,7 +160,18 @@ export default function JourClient({
         </div>
 
         <div className="txt">
-          {t.texte}
+          <span className="task-label">
+            {t.texte}
+            {/* Le trait de rature se dessine au moment où la tâche est cochée
+                et reste ensuite — `text-decoration` ne sait pas s'animer. */}
+            {/* Pas de vector-effect ici : il ferait calculer le pointillé en
+                pixels écran et casserait la normalisation pathLength, donc le
+                trait se dessinerait en morceaux. La hauteur du SVG vaut celle
+                de la viewBox, l'épaisseur reste donc juste. */}
+            <svg className="strike" viewBox="0 0 100 9" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M1 5.2C15 3.2 29 6.2 43 4.6S71 2.6 85 5.2 96 4.4 99 4.2" pathLength={1} />
+            </svg>
+          </span>
           {(obj || t.reporteLe) && (
             <div className="task-tags">
               {obj && (

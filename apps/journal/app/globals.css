@@ -313,7 +313,37 @@ h1, h2, h3, h4 { font-family: var(--font-display), var(--font-sans), sans-serif;
 }
 
 .task .txt { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink); line-height: 1.4; }
-.task.done .txt { color: var(--ink-3); text-decoration: line-through; text-decoration-color: var(--ink-4); }
+
+/* Rature tracée à la main : un trait légèrement ondulé qui se dessine de
+   gauche à droite quand on coche, et qui RESTE. `text-decoration` ne
+   s'anime pas — d'où le tracé SVG. */
+.task-label { position: relative; display: inline-block; transition: color 0.3s ease; }
+.task-label .strike {
+  position: absolute;
+  left: -3px;
+  width: calc(100% + 6px);
+  top: 50%;
+  height: 9px;
+  transform: translateY(-45%);
+  overflow: visible;
+  pointer-events: none;
+}
+.task-label .strike path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  /* Trait 1, intervalle 2 : avec `dasharray: 1` le motif se répète et
+     laisse réapparaître une amorce en fin de ligne quand la tâche
+     n'est pas cochée. */
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1;
+}
+.task.done .task-label { color: var(--ink-3); }
+.task.done .task-label .strike path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.5s cubic-bezier(.65,0,.35,1) 0.08s;
+}
 .task-tags { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .tag {
   font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 6px;
@@ -512,6 +542,91 @@ button.btn-primary:disabled { opacity: 0.55; cursor: default; }
 }
 .disc-sq:hover { transform: scale(1.22); }
 .disc-heat-legend { display: flex; justify-content: space-between; font-size: 10px; color: var(--ink-4); margin-top: 6px; font-weight: 500; }
+
+/* ---- Calendrier 30 jours, relâché au survol de la carte ----
+   La hauteur s'anime via grid-template-rows 0fr→1fr : pas de max-height
+   arbitraire à deviner, la carte s'ouvre exactement sur son contenu. */
+.disc-cal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s cubic-bezier(.22,1,.36,1);
+}
+.disc-card:hover .disc-cal,
+.disc-card:focus-within .disc-cal { grid-template-rows: 1fr; }
+.disc-cal-inner { overflow: hidden; min-height: 0; }
+/* Le bas réserve la place de l'infobulle, qui sort sous la dernière
+   rangée : l'inner clippe pour animer la hauteur, elle ne peut donc
+   pas déborder. */
+.disc-cal-pad { padding: 15px 0 36px; }
+.disc-cal-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 9px; }
+.disc-cal-title { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--ink-4); }
+.disc-cal-sub { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+
+/* Aligné sur les jours de la semaine : les colonnes sont lundi→dimanche,
+   ce qui rend visible « je saute toujours le dimanche » — et permet d'en
+   tirer la lecture affichée à droite. */
+.disc-cal-body { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: 18px; align-items: start; }
+.disc-cal-dows { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 5px; }
+.disc-cal-dow { font-size: 9.5px; font-weight: 700; color: var(--ink-4); text-align: center; }
+.disc-cal-grid { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.disc-cal-sq {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: var(--surface-3);
+  opacity: 0;
+  transform: scale(0.35);
+  cursor: default;
+}
+.disc-cal-sq.vide { background: transparent; }
+
+.disc-read { display: flex; flex-direction: column; gap: 12px; padding-top: 2px; }
+.disc-read-item .k { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--ink-4); }
+.disc-read-item .v { font-size: 13.5px; font-weight: 650; color: var(--ink); margin-top: 3px; text-transform: capitalize; }
+.disc-read-item .v small { font-weight: 500; color: var(--ink-3); text-transform: none; font-size: 11.5px; }
+
+@media (max-width: 620px) {
+  .disc-cal-body { grid-template-columns: minmax(0, 1fr); }
+}
+/* La révélation remonte depuis aujourd'hui vers le passé (délai posé
+   en ligne, calculé depuis la fin de la série). */
+.disc-card:hover .disc-cal-sq,
+.disc-card:focus-within .disc-cal-sq {
+  animation: calPop 0.42s cubic-bezier(.34,1.4,.5,1) forwards;
+}
+@keyframes calPop { to { opacity: 1; transform: scale(1); } }
+
+/* Une seule infobulle, qui glisse d'un jour à l'autre au lieu d'une
+   infobulle par case qui clignote. */
+.disc-tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  background: var(--ink);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 7px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 18px -8px rgba(13, 27, 46, 0.6);
+  opacity: 0;
+  transition: transform 0.26s cubic-bezier(.22,1,.36,1), opacity 0.18s ease;
+}
+.disc-tip.on { opacity: 1; }
+/* La pointe vise vers le haut : l'infobulle se pose sous le jour survolé. */
+.disc-tip::after {
+  content: "";
+  position: absolute;
+  left: var(--arrow, 50%);
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  background: var(--ink);
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 1px;
+}
 .disc-streak.pop { animation: streakPop 0.55s cubic-bezier(.34,1.56,.64,1); }
 @keyframes streakPop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
 
@@ -577,6 +692,9 @@ button.btn-primary:disabled { opacity: 0.55; cursor: default; }
   .g-2, .g-3 { grid-template-columns: minmax(0, 1fr); }
   .span-2 { grid-column: span 1; }
   .week-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Pas de survol au doigt : le calendrier reste ouvert. */
+  .disc-cal { grid-template-rows: 1fr; }
+  .disc-cal-sq { opacity: 1; transform: none; }
   .journal-entry { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .journal-body { padding-left: 13px; }
   .toast { bottom: 94px; }
