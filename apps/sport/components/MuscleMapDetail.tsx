@@ -6,8 +6,8 @@ import { MUSCLE_LABELS, MUSCLE_VERS_LIB } from "@/lib/domain/muscleMapping";
 import type { MuscleDetail, RoleMuscle } from "@/lib/domain/types";
 import { Card, CardHeader, CardTitle, CardDescription } from "./ui/card";
 
-const COULEUR_PRIMAIRE = "#FF5A1F";
-const COULEUR_SECONDAIRE = "#c2410c";
+const COULEUR_PRIMAIRE = "var(--accent)";
+const COULEUR_SECONDAIRE = "var(--accent-deep)";
 // index 0 = frequence 1 (secondaire), index 1 = frequence 2 (primaire) - cf. react-body-highlighter
 const HIGHLIGHTED_COLORS = [COULEUR_SECONDAIRE, COULEUR_PRIMAIRE];
 
@@ -41,7 +41,7 @@ export default function MuscleMapDetail({ muscles }: { muscles: Array<{ muscle: 
     <Card>
       <CardHeader className="pb-0">
         <div>
-          <CardTitle className="flex items-center gap-1.5"><Target className="h-4 w-4 text-[#FF5A1F]" aria-hidden="true" />Zone ciblée</CardTitle>
+          <CardTitle className="flex items-center gap-1.5"><Target className="h-4 w-4 text-[var(--accent-text)]" aria-hidden="true" />Zone ciblée</CardTitle>
           <CardDescription>Muscles primaires et secondaires</CardDescription>
         </div>
       </CardHeader>
@@ -59,7 +59,7 @@ export default function MuscleMapDetail({ muscles }: { muscles: Array<{ muscle: 
 
       <div className="flex flex-wrap gap-1.5 px-4 pb-4">
         {primaires.map((m) => (
-          <span key={m.muscle} className="inline-flex items-center gap-1.5 rounded-full border border-[#FF5A1F]/40 bg-[#2a1c10] px-2.5 py-1 text-[11px] font-medium text-[#ffd8c2]">
+          <span key={m.muscle} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent)]/40 bg-[var(--accent-wash)] px-2.5 py-1 text-[11px] font-medium text-[#ffd8c2]">
             <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: COULEUR_PRIMAIRE }} aria-hidden="true" />
             {MUSCLE_LABELS[m.muscle]}
           </span>

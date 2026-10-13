@@ -29,7 +29,7 @@ export default function Nav() {
               className="relative flex min-w-11 flex-1 flex-col items-center gap-1 px-3 py-2.5 text-xs transition-colors duration-150"
             >
               {active && (
-                <span className="absolute top-0 h-0.5 w-8 rounded-full bg-[var(--iron)] shadow-[0_0_8px_rgba(255,90,31,0.7)]" />
+                <span className="absolute top-0 h-0.5 w-8 rounded-full bg-[var(--iron)] shadow-[0_0_8px_rgba(var(--accent-rgb),0.7)]" />
               )}
               <Icon
                 className={`h-5 w-5 transition-colors duration-150 ${active ? "text-[var(--iron)]" : "text-[var(--grey)]"}`}

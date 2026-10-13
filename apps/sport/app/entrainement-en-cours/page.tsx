@@ -41,7 +41,7 @@ export default async function EntrainementEnCoursPage() {
           <span className="text-sm font-medium">
             {nbCompletes} / {nbTotal} exercices complétés
           </span>
-          <span className="font-heading text-lg font-black text-[#FF5A1F]">{pct}%</span>
+          <span className="font-heading text-lg font-black text-[var(--accent-text)]">{pct}%</span>
         </div>
         <Progress value={pct} />
       </div>

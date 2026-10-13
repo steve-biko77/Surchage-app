@@ -84,10 +84,10 @@ export default function ExerciseCard({
   return (
     <Card
       className={`mb-3 overflow-hidden transition-opacity ${
-        estProchain ? "border-[#FF5A1F] shadow-[0_0_0_1px_rgba(255,90,31,0.4)]" : exercice.prioritaire ? "border-[#FF5A1F]/50" : ""
+        estProchain ? "border-[var(--accent)] shadow-[0_0_0_1px_rgba(var(--accent-rgb),0.4)]" : exercice.prioritaire ? "border-[var(--accent)]/50" : ""
       } ${rayer && !estProchain ? "opacity-60" : ""}`}
     >
-      {(exercice.prioritaire || estProchain) && <div className="h-0.5 w-full bg-gradient-to-r from-[#FF5A1F] to-transparent" aria-hidden="true" />}
+      {(exercice.prioritaire || estProchain) && <div className="h-0.5 w-full bg-gradient-to-r from-[var(--accent)] to-transparent" aria-hidden="true" />}
       <div className="flex items-start gap-3 p-4">
         <Link href={`/exercices/${exercice.id}`} aria-label={`Voir la fiche de ${exercice.nom}`}>
           <MuscleSilhouette groupe={exercice.groupeMusculaire} />
@@ -98,7 +98,7 @@ export default function ExerciseCard({
               {exercice.nom}
             </h3>
             {exercice.prioritaire && (
-              <Star className="h-3.5 w-3.5 shrink-0 text-[#FF5A1F]" fill="#FF5A1F" aria-label="Exercice priorisé" />
+              <Star className="h-3.5 w-3.5 shrink-0 text-[var(--accent-text)]" fill="var(--accent)" aria-label="Exercice priorisé" />
             )}
             {estProchain && <Badge variant="accent" className="shrink-0">Suivant</Badge>}
           </div>
@@ -106,7 +106,7 @@ export default function ExerciseCard({
 
           {exercice.cible ? (
             <p className="mt-2 flex items-start gap-1.5 text-xs text-[#ffd8c2]">
-              <Target className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#FF5A1F]" aria-hidden="true" />
+              <Target className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
               <span>
                 <b className="font-heading text-[13px] tracking-wide">
                   {exercice.cible.mode === "duree"

@@ -8,7 +8,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-gradient-to-b from-[#ff7a45] to-[#c2410c] text-[#1a0d05] shadow-[0_2px_12px_rgba(255,90,31,0.35)] hover:brightness-110 active:scale-[0.98] focus-visible:ring-[#FF5A1F]",
+          "bg-gradient-to-br from-[var(--cta-from)] to-[var(--cta-to)] text-[var(--on-cta)] shadow-[0_2px_14px_rgba(var(--accent-rgb),0.4)] hover:brightness-110 active:scale-[0.98] focus-visible:ring-[var(--accent)]",
         secondary:
           "bg-gradient-to-b from-[#5ba3e0] to-[#2a5f8f] text-[#08131f] hover:brightness-110 active:scale-[0.98] focus-visible:ring-[#3B82C4]",
         outline:
@@ -16,7 +16,7 @@ const buttonVariants = cva(
         ghost:
           "text-[var(--grey)] hover:text-[var(--chalk)] hover:bg-white/5 active:scale-[0.98] focus-visible:ring-[var(--steel)]",
         pill:
-          "rounded-full border border-[var(--steel)] text-[var(--chalk)] normal-case font-medium tracking-normal hover:border-[#FF5A1F] hover:text-[#FF5A1F] active:scale-[0.96] focus-visible:ring-[#FF5A1F]",
+          "rounded-full border border-[var(--steel)] text-[var(--chalk)] normal-case font-medium tracking-normal hover:border-[var(--accent)] hover:text-[var(--accent-text)] active:scale-[0.96] focus-visible:ring-[var(--accent)]",
       },
       size: {
         default: "h-11 px-4 py-2 min-w-11",

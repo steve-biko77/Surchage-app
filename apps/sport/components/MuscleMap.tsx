@@ -4,7 +4,7 @@ import Model, { type IExerciseData } from "react-body-highlighter";
 import { GROUPE_VERS_MUSCLES } from "./MuscleSilhouette";
 import { Card, CardHeader, CardTitle, CardDescription } from "./ui/card";
 
-const INTENSITE_COULEURS = ["#5a3420", "#c2410c", "#FF5A1F", "#ffb088"];
+const INTENSITE_COULEURS = ["#1e2a5c", "#3449b8", "#4C6FFF", "#B9C6FF"];
 
 function frequenceDepuisSets(sets: number): number {
   if (sets <= 0) return 0;

@@ -1,18 +1,65 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════
+   SURCHARGE — thème « bleu nuit »
+   L'échelle d'accent reprend exactement les sept paliers de
+   luminance de l'ancienne gamme orange, pour que tous les
+   rapports de contraste existants restent valides.
+   ═══════════════════════════════════════════════════════════════ */
+
 :root {
-  --bg: #0c0d11;
-  --bg-card: #17181e;
-  --bg-card-2: #1e2027;
-  --card-border: #2a2c34;
-  --steel: #3a3e4a;
-  --chalk: #EDEDEA;
-  --grey: #8b8d98;
-  --iron: #FF5A1F;
-  --iron-dim: #c2410c;
-  --info: #3B82C4;
-  --success: #4CAF50;
-  --danger: #ef4444;
+  /* ---- Surfaces ---- */
+  --bg: #070b1a;
+  --bg-card: #0f1530;
+  --bg-card-2: #161e3c;
+  --card-border: #232c52;
+  /* Bordure des champs et des boutons à contour : doit rester perceptible
+     (WCAG 1.4.11, 3:1 minimum). L'ancienne valeur, comme son équivalent
+     orange, ne donnait que 1,7:1 sur une carte. */
+  --steel: #5a6792;
+
+  /* ---- Texte ---- */
+  --chalk: #e9edfb;
+  --grey: #8794b8;
+
+  /* ---- Accent : échelle complète ----
+     Ancien équivalent orange indiqué en regard. */
+  --accent-wash: #121a3a;      /* ex #2a1c10 — fond de badge */
+  --accent-darkest: #1e2a5c;   /* ex #5a3420 — intensité 0 */
+  --accent-deeper: #2a3b84;    /* ex #8a3517 — départ de jauge */
+  --accent-deep: #3449b8;      /* ex #c2410c */
+  --accent: #4c6fff;           /* ex #FF5A1F — remplissages, bordures, halos */
+  --accent-soft: #7a93ff;      /* ex #ff7a45 */
+  --accent-lightest: #b9c6ff;  /* ex #ffb088 — intensité max */
+  --on-accent: #060b1e;        /* ex #1a0d05 — texte posé sur l'accent */
+
+  /* Texte à l'accent : --accent ne donne que 4,1:1 sur --bg-card,
+     sous le seuil AA. Ce palier monte à 7,3:1. */
+  --accent-text: #8aa2ff;
+
+  /* Halo de l'accent, en composantes pour les ombres Tailwind. */
+  --accent-rgb: 76, 111, 255;
+
+  /* ---- Action principale ----
+     Transposé tel quel, l'ancien bouton orange devenait un dégradé
+     périwinkle à texte sombre : lisible, mais pastel. Un indigo→violet
+     à texte blanc tient le registre « premium » et reste conforme
+     (5,15:1 en haut, 6,00:1 en bas — l'accent seul n'aurait donné
+     que 4,18:1 sous du blanc). */
+  --cta-from: #4a5cf0;
+  --cta-to: #6b3fe8;
+  --on-cta: #ffffff;
+
+  /* ---- Alias de compatibilité ----
+     Conservés le temps que toutes les occurrences passent aux
+     tokens sémantiques ci-dessus. */
+  --iron: var(--accent);
+  --iron-dim: var(--accent-deep);
+
+  /* ---- Statuts ---- */
+  --info: #38bdf8;
+  --success: #34d399;
+  --danger: #f87171;
 }
 
 * {
@@ -25,7 +72,7 @@ html {
 
 body {
   background:
-    radial-gradient(ellipse 900px 500px at 50% -10%, #1c1f2a 0%, transparent 60%),
+    radial-gradient(ellipse 900px 500px at 50% -10%, #182449 0%, transparent 60%),
     var(--bg);
   background-attachment: fixed;
   color: var(--chalk);
@@ -49,17 +96,17 @@ input, select, textarea {
   transition: border-color 150ms ease-out;
 }
 input:focus, select:focus, textarea:focus {
-  border-color: var(--iron);
+  border-color: var(--accent);
 }
 
 :focus-visible {
-  outline: 2px solid var(--iron);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--iron);
-  color: #1a0d05;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

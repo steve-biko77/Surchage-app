@@ -13,9 +13,9 @@ export default function SeanceResumeWidget({ resume }: { resume: ResumeSeance })
           <CardDescription>Aujourd&apos;hui</CardDescription>
         </div>
         {resume.dominante && (
-          <div className="flex items-center gap-1.5 rounded-full border border-[#FF5A1F]/40 bg-[#2a1c10] px-2.5 py-1">
-            <Sparkles className="h-3 w-3 text-[#FF5A1F]" aria-hidden="true" />
-            <span className="text-[10px] font-medium uppercase tracking-wide text-[#FF5A1F]">{resume.dominante}</span>
+          <div className="flex items-center gap-1.5 rounded-full border border-[var(--accent)]/40 bg-[var(--accent-wash)] px-2.5 py-1">
+            <Sparkles className="h-3 w-3 text-[var(--accent-text)]" aria-hidden="true" />
+            <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--accent-text)]">{resume.dominante}</span>
           </div>
         )}
       </CardHeader>

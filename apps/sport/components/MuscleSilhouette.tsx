@@ -26,7 +26,7 @@ export default function MuscleSilhouette({ groupe }: { groupe: string }) {
     <div
       className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg"
       style={{
-        background: "radial-gradient(circle at 50% 30%, rgba(255,90,31,0.12), transparent 70%)",
+        background: "radial-gradient(circle at 50% 30%, rgba(var(--accent-rgb),0.12), transparent 70%)",
       }}
       role="img"
       aria-label={`Silhouette du groupe musculaire ${groupe}`}
@@ -35,7 +35,7 @@ export default function MuscleSilhouette({ groupe }: { groupe: string }) {
         type={config.view}
         data={[{ name: groupe, muscles: config.muscles, frequency: 1 }]}
         bodyColor="#343742"
-        highlightedColors={["#FF5A1F"]}
+        highlightedColors={["#4C6FFF"]}
         style={{ width: "100%", height: "100%" }}
         svgStyle={{ width: "100%", height: "100%" }}
       />

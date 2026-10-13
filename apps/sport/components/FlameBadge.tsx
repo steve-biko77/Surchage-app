@@ -5,9 +5,9 @@ export default function FlameBadge({ niveau }: { niveau: 0 | 1 | 2 | 3 }) {
   const flameCount = [0, 1, 2, 3][niveau];
   const glow = [
     "",
-    "shadow-[0_0_10px_rgba(255,90,31,0.3)]",
-    "shadow-[0_0_16px_rgba(255,90,31,0.5)]",
-    "shadow-[0_0_24px_rgba(255,90,31,0.85)]",
+    "shadow-[0_0_10px_rgba(var(--accent-rgb),0.3)]",
+    "shadow-[0_0_16px_rgba(var(--accent-rgb),0.5)]",
+    "shadow-[0_0_24px_rgba(var(--accent-rgb),0.85)]",
   ][niveau];
 
   return (
@@ -22,8 +22,8 @@ export default function FlameBadge({ niveau }: { niveau: 0 | 1 | 2 | 3 }) {
           Array.from({ length: flameCount }).map((_, i) => (
             <Flame
               key={i}
-              className={`h-4 w-4 -ml-1 first:ml-0 text-[#FF5A1F] ${niveau === 3 ? "animate-flicker" : ""}`}
-              fill="#FF5A1F"
+              className={`h-4 w-4 -ml-1 first:ml-0 text-[var(--accent-text)] ${niveau === 3 ? "animate-flicker" : ""}`}
+              fill="var(--accent)"
               strokeWidth={1.5}
             />
           ))

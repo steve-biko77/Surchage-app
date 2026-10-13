@@ -126,7 +126,7 @@ export default function ObjectifsClient({
             <CardContent className="pt-4">
               <div className="mb-2 flex items-baseline justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Clock className="h-3.5 w-3.5 shrink-0 text-[#FF5A1F]" aria-hidden="true" />
+                  <Clock className="h-3.5 w-3.5 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
                   <h3 className="truncate font-heading font-bold">{o.nom}</h3>
                 </div>
                 {o.deadline && <span className="shrink-0 text-[10px] text-[var(--grey)]">échéance {o.deadline}</span>}
@@ -158,7 +158,7 @@ export default function ObjectifsClient({
               role="radio"
               aria-checked={type === "temps"}
               onClick={() => setType("temps")}
-              className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-xs font-medium transition-colors duration-150 ${type === "temps" ? "border-[#FF5A1F] bg-[#2a1c10] text-[#FF5A1F]" : "border-[var(--steel)] text-[var(--grey)] hover:text-[var(--chalk)]"}`}
+              className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-xs font-medium transition-colors duration-150 ${type === "temps" ? "border-[var(--accent)] bg-[var(--accent-wash)] text-[var(--accent-text)]" : "border-[var(--steel)] text-[var(--grey)] hover:text-[var(--chalk)]"}`}
             >
               <Clock className="h-3.5 w-3.5" aria-hidden="true" /> Temps
             </button>
