@@ -15,8 +15,10 @@ export default async function DisciplinesPage() {
       const instance = disciplineDepuisRow(row);
       const niveauFlamme = instance.calculerNiveauFlamme(historique, today);
       const streak = calculerStreak(historique, today);
-      const historique14 = Array.from({ length: 14 }, (_, i) => {
-        const d = decalerDate(today, -13 + i);
+      // 30 jours : la bande visible n'en montre que 14, le calendrier
+      // relâché au survol les affiche tous.
+      const historique30 = Array.from({ length: 30 }, (_, i) => {
+        const d = decalerDate(today, -29 + i);
         return { date: d, fait: historique.includes(d) };
       });
       return {
@@ -27,7 +29,7 @@ export default async function DisciplinesPage() {
         streak,
         niveauFlamme,
         faitAujourdhui: historique.includes(today),
-        historique14,
+        historique30,
       };
     })
   );
