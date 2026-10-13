@@ -5,3 +5,8 @@ dist
 .env.local
 .env*
 .vercel
+# Contient la cle API 21st en clair -- ne doit jamais partir dans un commit.
+.mcp.json
+*.tsbuildinfo
+.claude/settings.local.json
+**/.claude/settings.local.json
