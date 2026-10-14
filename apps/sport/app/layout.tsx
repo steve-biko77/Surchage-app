@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
-import Nav from "@/components/Nav";
+import Nav, { Sidebar } from "@/components/Nav";
 import { Dumbbell } from "lucide-react";
 
 const fontBody = Barlow({
@@ -27,19 +27,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" className={`${fontBody.variable} ${fontHeading.variable}`}>
       <body className="antialiased">
-        <div className="max-w-xl mx-auto px-4 pb-28 pt-6">
-          <header className="mb-6 flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-[var(--accent-soft)] to-[var(--accent-deep)] shadow-[0_4px_16px_-4px_rgba(var(--accent-rgb),0.5)]">
-              <Dumbbell className="h-5 w-5 text-[var(--on-accent)]" strokeWidth={2.5} aria-hidden="true" />
+        <div className="shell">
+          <Sidebar />
+          <div className="shell-main">
+            <div className="contenu">
+              <header className="entete-mobile">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-[var(--accent-soft)] to-[var(--accent-deep)] shadow-[0_4px_16px_-4px_rgba(var(--accent-rgb),0.5)]">
+                  <Dumbbell className="h-5 w-5 text-[var(--on-accent)]" strokeWidth={2.5} aria-hidden="true" />
+                </div>
+                <div>
+                  <h1 className="font-heading text-2xl font-extrabold uppercase tracking-wide leading-none bg-gradient-to-b from-white to-[var(--accent)] bg-clip-text text-transparent">
+                    Surcharge
+                  </h1>
+                  <p className="text-[11px] text-[var(--grey)] uppercase tracking-widest">Module Sport</p>
+                </div>
+              </header>
+              <main>{children}</main>
             </div>
-            <div>
-              <h1 className="font-heading text-2xl font-extrabold uppercase tracking-wide leading-none bg-gradient-to-b from-white to-[var(--accent)] bg-clip-text text-transparent">
-                Surcharge
-              </h1>
-              <p className="text-[11px] text-[var(--grey)] uppercase tracking-widest">Module Sport</p>
-            </div>
-          </header>
-          <main>{children}</main>
+          </div>
         </div>
         <Nav />
       </body>

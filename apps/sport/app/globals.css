@@ -56,10 +56,41 @@
   --iron: var(--accent);
   --iron-dim: var(--accent-deep);
 
-  /* ---- Statuts ---- */
-  --info: #38bdf8;
-  --success: #34d399;
+  /* ---- Statuts ----
+     Une seconde palette (bleu acier #3B82C4 et dérivés, vert #4CAF50) vivait
+     en dur dans une vingtaine de composants, sans passer par aucun token :
+     deux bleus se disputaient l'écran, d'où le manque d'harmonie. Elle est
+     ramenée ici, recalée sur l'accent. */
+  --info: #4d93d8;          /* ex #3B82C4 — accent secondaire : planifié, lié au temps */
+  --info-text: #8fc4ee;     /* ex #5ba3e0 / #7fb8e8 — 7,0:1 sur --bg-card */
+  --info-deep: #2f6698;     /* ex #2a5f8f */
+  --info-wash: #122233;
+  --on-info: #08131f;
+
+  --success: #46c268;       /* ex #4CAF50, remonté à 5,4:1 sur --bg-card */
+  --success-wash: #0f2a1a;
   --danger: #f87171;
+
+  /* Neutres des graphiques : étaient figés sur des gris chauds hérités
+     du thème orange, qui tiraient le bleu nuit vers le brun. */
+  --grille: #242c4e;
+  --tooltip-bg: #121936;
+
+  /* ---- Carte musculaire ----
+     Cinq paliers de volume hebdomadaire. Les écarts sont réglés pour rester
+     perceptibles UNE FOIS la lumière directionnelle appliquée : celle-ci
+     ajoute jusqu'à 14% de blanc en haut à gauche et retire 32% en bas à
+     droite, donc un palier doit porter plus que cette dérive, sinon la
+     position sur le corps se lirait comme du volume. */
+  --anat-0: #1f2744;   /* non sollicité — acier froid, clairement « éteint » */
+  --anat-1: #2d3f87;
+  --anat-2: #3a55c4;
+  --anat-3: #4c6fff;
+  --anat-4: #6480ff;   /* le palier haut porte un halo plutôt qu'une teinte plus claire,
+                          qui serait cramée par la lumière */
+  --anat-socle: #131a38;   /* socle dilaté sous les facettes */
+  --anat-inerte: #161d3b;  /* tête, mains, pieds, articulations */
+  --anat-couture: #0b1026; /* séparation des facettes */
 }
 
 * {
@@ -126,3 +157,373 @@ input:focus, select:focus, textarea:focus {
 .animate-flicker {
   animation: flicker 1.8s ease-in-out infinite;
 }
+
+/* ═══════════════════════════ Carte musculaire ═══════════════════════════ */
+
+.anat { position: relative; }
+
+/* --- Bascule face / dos --- */
+/* Sous le corps et centrée : en haut à droite elle recouvrait la tête. */
+.anat-bascule {
+  position: relative; z-index: 3;
+  margin: 16px auto 0; width: fit-content;
+  display: flex; gap: 2px; padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--bg-card-2) 80%, transparent);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+  backdrop-filter: blur(6px);
+}
+.anat-bascule button {
+  min-width: 52px; padding: 5px 12px;
+  border: 0; border-radius: 999px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--grey); background: transparent; cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.anat-bascule button:hover { color: var(--chalk); }
+.anat-bascule button.on {
+  color: var(--chalk);
+  background: linear-gradient(to bottom right, var(--accent-deep), var(--accent-darkest));
+  box-shadow: 0 2px 10px -4px rgba(var(--accent-rgb), 0.9);
+}
+
+/* --- Scène 3D : le corps se retourne, il ne se fond pas --- */
+.anat-scene {
+  position: relative; perspective: 1400px;
+  height: clamp(330px, 52vh, 620px);
+}
+.anat-pivot {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.72s cubic-bezier(0.68, 0.02, 0.26, 1);
+}
+.anat-pivot.retourne { transform: rotateY(180deg); }
+.anat-face {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  backface-visibility: hidden;
+}
+/* Pré-rotation : la vue postérieure est déjà dessinée « vue de derrière »,
+   ce demi-tour la remet à l'endroit une fois le pivot tourné. */
+.anat-face.arriere { transform: rotateY(180deg); }
+
+/* --- Facettes --- */
+.anat-part {
+  transition: fill 0.3s ease, opacity 0.3s ease;
+  animation: anat-apparait 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.anat-part:not(.inerte) { cursor: pointer; }
+.anat-part.actif { fill: var(--accent-lightest) !important; }
+.anat-part:focus-visible { outline: none; stroke: var(--accent-lightest); stroke-width: 0.3; }
+
+@keyframes anat-apparait {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* --- Infobulle --- */
+.anat-bulle {
+  position: absolute; z-index: 4;
+  transform: translate(-50%, calc(-100% - 10px));
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 6px 10px; border-radius: 10px;
+  background: color-mix(in oklab, var(--bg-card-2) 92%, transparent);
+  box-shadow: 0 10px 26px -12px #000, inset 0 0 0 1px var(--card-border);
+  backdrop-filter: blur(8px);
+  white-space: nowrap; pointer-events: none;
+  animation: anat-bulle-entre 0.18s ease-out;
+}
+.anat-bulle b { font-size: 12px; font-weight: 600; color: var(--chalk); }
+.anat-bulle span { font-size: 10.5px; color: var(--accent-text); }
+.anat-bulle::after {
+  content: ""; position: absolute; left: 50%; bottom: -4px;
+  width: 8px; height: 8px; transform: translateX(-50%) rotate(45deg);
+  background: color-mix(in oklab, var(--bg-card-2) 92%, transparent);
+}
+@keyframes anat-bulle-entre {
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 2px)); }
+  to   { opacity: 1; transform: translate(-50%, calc(-100% - 10px)); }
+}
+
+/* --- Légende des paliers --- */
+.anat-legende {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--grey);
+}
+.anat-legende .barres { display: flex; gap: 3px; }
+.anat-legende i {
+  width: 16px; height: 5px; border-radius: 2px; display: block;
+}
+
+/* ═══════════════════════════ Coque applicative ═══════════════════════════ */
+/* L'app vivait dans une colonne `max-w-xl` centrée : sur un écran large,
+   c'était une maquette mobile étirée. Grille à deux colonnes au-delà de
+   1024px, barre basse conservée en dessous. */
+
+.shell { min-height: 100dvh; }
+.shell-main { padding: 22px 16px 104px; }
+
+.barre-mobile {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+  margin: 0 auto; max-width: 36rem;
+  border-top: 1px solid var(--card-border);
+  background: color-mix(in oklab, var(--bg-card) 95%, transparent);
+  backdrop-filter: blur(12px);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.colonne { display: none; }
+
+@media (min-width: 1024px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 252px minmax(0, 1fr);
+    align-items: start;
+  }
+  .shell-main { padding: 28px 32px 48px; }
+  .barre-mobile { display: none; }
+
+  .colonne {
+    position: sticky; top: 0;
+    display: flex; flex-direction: column; gap: 26px;
+    height: 100dvh; padding: 24px 16px;
+    border-right: 1px solid var(--card-border);
+    background: linear-gradient(to bottom, var(--bg-card), var(--bg));
+  }
+}
+
+.colonne-marque { display: flex; align-items: center; gap: 11px; padding: 0 6px; }
+.colonne-logo {
+  display: flex; align-items: center; justify-content: center;
+  height: 40px; width: 40px; flex-shrink: 0; border-radius: 12px;
+  background: linear-gradient(to bottom, var(--accent-soft), var(--accent-deep));
+  box-shadow: 0 4px 16px -4px rgba(var(--accent-rgb), 0.5);
+}
+.colonne-titre {
+  font-family: var(--font-heading), system-ui;
+  font-size: 19px; font-weight: 800; line-height: 1;
+  text-transform: uppercase; letter-spacing: 0.02em;
+  background: linear-gradient(to bottom, #fff, var(--accent));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.colonne-sous {
+  margin-top: 3px; font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--grey);
+}
+
+.colonne-liens { display: flex; flex-direction: column; gap: 3px; }
+.colonne-lien {
+  position: relative;
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border-radius: 11px;
+  font-size: 14px; color: var(--grey);
+  transition: color 0.16s, background 0.16s;
+}
+.colonne-lien:hover { color: var(--chalk); background: var(--bg-card-2); }
+.colonne-lien.on {
+  color: var(--chalk); font-weight: 600;
+  background: linear-gradient(to right, var(--accent-wash), transparent);
+}
+.colonne-lien.on::before {
+  content: ""; position: absolute; left: 0; top: 50%;
+  height: 20px; width: 3px; border-radius: 0 3px 3px 0;
+  transform: translateY(-50%);
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.8);
+}
+
+/* En-tête : visible en mobile seulement, la colonne porte la marque au-delà. */
+.entete-mobile { margin-bottom: 22px; display: flex; align-items: center; gap: 12px; }
+@media (min-width: 1024px) { .entete-mobile { display: none; } }
+
+/* Largeur de lecture confortable sans colonne étirée. */
+.contenu { margin: 0 auto; max-width: 36rem; }
+@media (min-width: 1024px) { .contenu { max-width: 1180px; } }
+
+/* ══════════════════ Section carte musculaire (accueil) ══════════════════ */
+
+.carte-sec {
+  position: relative;
+  margin-bottom: 18px; padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--card-border);
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(var(--accent-rgb), 0.10), transparent 70%),
+    linear-gradient(to bottom, var(--bg-card), var(--bg));
+  overflow: hidden;
+}
+@media (min-width: 1024px) { .carte-sec { padding: 24px 26px; } }
+
+.carte-sec-tete {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: flex-start; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.carte-sec-titre {
+  font-family: var(--font-heading), system-ui;
+  font-size: 20px; font-weight: 800; line-height: 1.1;
+  text-transform: uppercase; letter-spacing: 0.02em; color: var(--chalk);
+}
+.carte-sec-sous { margin-top: 4px; font-size: 13px; color: var(--grey); max-width: 46ch; }
+
+/* Le corps est la pièce maîtresse : il tient le centre, la liste et le détail
+   l'encadrent. En dessous de 1340px on repasse à deux colonnes, puis à une. */
+.carte-grille {
+  display: grid; gap: 18px;
+  grid-template-areas: "corps" "liste" "detail";
+}
+@media (min-width: 1024px) {
+  .carte-grille {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-areas: "corps liste" "corps detail";
+    align-content: center; gap: 16px 28px;
+  }
+}
+@media (min-width: 1340px) {
+  .carte-grille {
+    /* Colonne centrale dimensionnée au corps : les colonnes latérales
+       absorbent le mou, sinon un `1fr` central laisse le corps flotter
+       au milieu de 800px de vide. */
+    grid-template-columns: minmax(270px, 1fr) auto minmax(270px, 1fr);
+    grid-template-areas: "liste corps detail";
+    align-items: center; gap: 36px;
+  }
+  .carte-liste { justify-self: end; width: min(100%, 330px); }
+  .carte-detail { justify-self: start; width: min(100%, 330px); }
+}
+
+.carte-corps { grid-area: corps; display: flex; flex-direction: column; justify-content: center; }
+.carte-liste { grid-area: liste; min-width: 0; align-self: end; }
+.carte-detail { grid-area: detail; min-width: 0; align-self: start; }
+@media (min-width: 1340px) {
+  .carte-liste, .carte-detail { align-self: center; }
+}
+
+/* --- Liste des groupes --- */
+.grp-liste { display: flex; flex-direction: column; gap: 2px; }
+.grp-ligne {
+  display: grid; grid-template-columns: 92px minmax(0, 1fr) 28px;
+  align-items: center; gap: 10px;
+  width: 100%; padding: 7px 9px; border: 0; border-radius: 9px;
+  background: transparent; cursor: pointer; text-align: left;
+  transition: background 0.16s;
+}
+.grp-ligne:hover, .grp-ligne.on { background: var(--bg-card-2); }
+.grp-nom { font-size: 12.5px; color: var(--chalk); white-space: nowrap; }
+.grp-jauge {
+  height: 6px; border-radius: 3px; overflow: hidden;
+  background: color-mix(in oklab, var(--anat-0) 70%, transparent);
+}
+.grp-jauge i {
+  display: block; height: 100%; border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.grp-sets {
+  font-size: 11.5px; font-variant-numeric: tabular-nums;
+  text-align: right; color: var(--grey);
+}
+
+/* --- Panneau de détail --- */
+.grp-detail {
+  padding: 13px; border-radius: 14px;
+  border: 1px solid var(--card-border); background: var(--bg-card-2);
+  animation: grp-ouvre 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes grp-ouvre {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.grp-detail-tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.grp-detail-tete h3 {
+  font-family: var(--font-heading), system-ui;
+  font-size: 15px; font-weight: 700; color: var(--chalk);
+}
+.grp-detail-tete button {
+  border: 0; background: transparent; cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 4px; color: var(--grey);
+}
+.grp-detail-tete button:hover { color: var(--chalk); }
+
+.grp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 999px;
+  font-size: 11px; color: var(--accent-text);
+  background: var(--accent-wash);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+
+.grp-k {
+  display: block; margin-bottom: 5px;
+  font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey);
+}
+.grp-portions { margin-top: 12px; }
+.grp-portions-liste { display: flex; flex-wrap: wrap; gap: 4px; }
+.portion {
+  padding: 3px 7px; border-radius: 6px;
+  font-size: 10.5px; color: var(--grey);
+  background: color-mix(in oklab, var(--anat-0) 60%, transparent);
+}
+.grp-exos { margin-top: 12px; }
+.grp-exos ul { display: flex; flex-direction: column; gap: 5px; }
+.grp-exos li {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; color: var(--chalk);
+}
+
+.grp-vide {
+  padding: 13px; border-radius: 14px;
+  border: 1px dashed var(--card-border);
+  font-size: 12.5px; color: var(--grey); line-height: 1.5;
+}
+.grp-vide b { color: var(--chalk); }
+.grp-vide-aide { margin-top: 5px; font-size: 11px; opacity: 0.75; }
+
+/* ═══════════════════ Bandeau de séance (accueil) ═══════════════════ */
+
+.seance-bandeau {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  align-items: center; justify-content: space-between;
+  margin-bottom: 16px; padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--card-border);
+  background: linear-gradient(to right, var(--bg-card), var(--bg-card-2));
+}
+.seance-infos { min-width: 0; }
+.seance-jour {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--grey);
+}
+.seance-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 999px;
+  letter-spacing: 0.06em; color: var(--info);
+  background: color-mix(in oklab, var(--info) 14%, transparent);
+}
+.seance-nom {
+  margin-top: 3px;
+  font-family: var(--font-heading), system-ui;
+  font-size: 23px; font-weight: 800; line-height: 1.1; color: var(--chalk);
+}
+.seance-meta { margin-top: 4px; font-size: 12.5px; color: var(--grey); }
+.seance-actions { display: flex; align-items: center; gap: 12px; }
+
+.seance-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 20px; border-radius: 13px;
+  font-size: 14px; font-weight: 600; color: var(--on-cta);
+  background: linear-gradient(to bottom right, var(--cta-from), var(--cta-to));
+  box-shadow: 0 8px 22px -10px rgba(var(--accent-rgb), 0.95);
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.16s;
+}
+.seance-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px -10px rgba(var(--accent-rgb), 1);
+}
+.seance-cta:active { transform: translateY(0); }
+
+/* Les cartes d'exercice tenaient en une colonne même sur 1400px de large. */
+.exos-grille { display: grid; gap: 12px; }
+@media (min-width: 1024px) { .exos-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1500px) { .exos-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

@@ -181,13 +181,13 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
   return (
     <div>
       {confirmation && (
-        <div className="mb-3 flex items-center gap-2 rounded-lg border border-[var(--success)]/40 bg-[#0f2a1a] px-3 py-2 text-sm text-[var(--success)]">
+        <div className="mb-3 flex items-center gap-2 rounded-lg border border-[var(--success)]/40 bg-[var(--success-wash)] px-3 py-2 text-sm text-[var(--success)]">
           <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> {confirmation}
         </div>
       )}
 
       {/* Seance en cours */}
-      <Card className="mb-4 border-[#3B82C4]/40">
+      <Card className="mb-4 border-[var(--info)]/40">
         <CardContent className="pt-4">
           <label className="sr-only" htmlFor="nom-seance">Nom de la séance</label>
           <input
@@ -360,7 +360,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
                 role="radio"
                 aria-checked={uniteMesureExo === "duree"}
                 onClick={() => setUniteMesureExo("duree")}
-                className={`rounded-lg border py-2 text-xs font-medium ${uniteMesureExo === "duree" ? "border-[#3B82C4] bg-[#122233] text-[#3B82C4]" : "border-[var(--steel)] text-[var(--grey)]"}`}
+                className={`rounded-lg border py-2 text-xs font-medium ${uniteMesureExo === "duree" ? "border-[var(--info)] bg-[var(--info-wash)] text-[var(--info)]" : "border-[var(--steel)] text-[var(--grey)]"}`}
               >
                 Durée
               </button>

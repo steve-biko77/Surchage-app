@@ -12,7 +12,7 @@ export default async function EntrainementEnCoursPage() {
   if (!nomSeance || exercicesAvecCible.length === 0) {
     return (
       <div>
-        <Link href="/" className="mb-4 inline-flex items-center gap-1.5 text-sm text-[#3B82C4]">
+        <Link href="/" className="mb-4 inline-flex items-center gap-1.5 text-sm text-[var(--info)]">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Retour
         </Link>
         <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--bg-card)] py-12 text-center text-[var(--grey)]">
@@ -29,7 +29,7 @@ export default async function EntrainementEnCoursPage() {
 
   return (
     <div>
-      <Link href="/" className="mb-4 inline-flex items-center gap-1.5 text-sm text-[#3B82C4]">
+      <Link href="/" className="mb-4 inline-flex items-center gap-1.5 text-sm text-[var(--info)]">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Retour
       </Link>
 
