@@ -112,12 +112,12 @@ export default function ProgressionClient({ exercices }: { exercices: Exercice[]
             <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke="#2a2c34" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: "#8b8d98", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "#2a2c34" }} />
-                  <YAxis tick={{ fill: "#8b8d98", fontSize: 10 }} tickLine={false} axisLine={false} width={36} />
+                  <CartesianGrid stroke="var(--grille)" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: "var(--grey)", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "var(--grille)" }} />
+                  <YAxis tick={{ fill: "var(--grey)", fontSize: 10 }} tickLine={false} axisLine={false} width={36} />
                   <Tooltip
-                    contentStyle={{ background: "#17181e", border: "1px solid #3a3e4a", borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: "#8b8d98" }}
+                    contentStyle={{ background: "var(--tooltip-bg)", border: "1px solid var(--card-border)", borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: "var(--grey)" }}
                     formatter={(value) => [formatValeur(Number(value), metrique), METRIQUE_LABEL[metrique]]}
                   />
                   <Line type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={2.5} dot={{ fill: "var(--accent)", r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} />

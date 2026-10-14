@@ -98,7 +98,7 @@ export default function ObjectifsClient({
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[#3B82C4]" aria-hidden="true" />
+                      <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[var(--info)]" aria-hidden="true" />
                       <h3 className="truncate font-heading font-bold">{o.nom}</h3>
                     </div>
                     <p className="truncate text-[10px] uppercase tracking-wide text-[var(--grey)]">{nomsExercices || "Exercice"}</p>
@@ -109,7 +109,7 @@ export default function ObjectifsClient({
                     o.deadline && <span className="shrink-0 text-[10px] text-[var(--grey)]">échéance {o.deadline}</span>
                   )}
                 </div>
-                <Progress value={pct} indicatorClassName="from-[#2a5f8f] to-[#3B82C4]" />
+                <Progress value={pct} indicatorClassName="from-[var(--info-deep)] to-[var(--info)]" />
                 <div className="mt-2 flex justify-between text-xs text-[var(--grey)]">
                   <span>{o.unite}</span>
                   <span className="font-medium text-[var(--chalk)]">{pct}%</span>
@@ -148,9 +148,9 @@ export default function ObjectifsClient({
         );
       })}
 
-      <Card className="mt-6 border-[#3B82C4]/40">
+      <Card className="mt-6 border-[var(--info)]/40">
         <CardContent className="pt-4">
-          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[#3B82C4]">Nouvel objectif</h3>
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-[var(--info)]">Nouvel objectif</h3>
 
           <div className="mb-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Type d'objectif">
             <button
@@ -167,7 +167,7 @@ export default function ObjectifsClient({
               role="radio"
               aria-checked={type === "performance"}
               onClick={() => setType("performance")}
-              className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-xs font-medium transition-colors duration-150 ${type === "performance" ? "border-[#3B82C4] bg-[#122233] text-[#3B82C4]" : "border-[var(--steel)] text-[var(--grey)] hover:text-[var(--chalk)]"}`}
+              className={`flex items-center justify-center gap-1.5 rounded-lg border py-2.5 text-xs font-medium transition-colors duration-150 ${type === "performance" ? "border-[var(--info)] bg-[var(--info-wash)] text-[var(--info)]" : "border-[var(--steel)] text-[var(--grey)] hover:text-[var(--chalk)]"}`}
             >
               <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" /> Performance
             </button>
@@ -197,13 +197,13 @@ export default function ObjectifsClient({
                   return (
                     <label
                       key={e.id}
-                      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${checked ? "bg-[#122233] text-[#3B82C4]" : "text-[var(--chalk)]"}`}
+                      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${checked ? "bg-[var(--info-wash)] text-[var(--info)]" : "text-[var(--chalk)]"}`}
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleExercice(e.id)}
-                        className="h-4 w-4 shrink-0 accent-[#3B82C4]"
+                        className="h-4 w-4 shrink-0 accent-[var(--info)]"
                         style={{ minHeight: 0 }}
                       />
                       {e.nom}

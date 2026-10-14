@@ -10,7 +10,7 @@ const buttonVariants = cva(
         primary:
           "bg-gradient-to-br from-[var(--cta-from)] to-[var(--cta-to)] text-[var(--on-cta)] shadow-[0_2px_14px_rgba(var(--accent-rgb),0.4)] hover:brightness-110 active:scale-[0.98] focus-visible:ring-[var(--accent)]",
         secondary:
-          "bg-gradient-to-b from-[#5ba3e0] to-[#2a5f8f] text-[#08131f] hover:brightness-110 active:scale-[0.98] focus-visible:ring-[#3B82C4]",
+          "bg-gradient-to-b from-[var(--info-text)] to-[var(--info-deep)] text-[var(--on-info)] hover:brightness-110 active:scale-[0.98] focus-visible:ring-[var(--info)]",
         outline:
           "border border-[var(--steel)] text-[var(--chalk)] bg-transparent hover:bg-white/5 active:scale-[0.98] focus-visible:ring-[var(--steel)]",
         ghost:

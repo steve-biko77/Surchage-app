@@ -1,43 +1,41 @@
 "use client";
 
-import Model, { type Muscle } from "react-body-highlighter";
+// Vignette d'un groupe musculaire. Même tracé et même échelle que la carte
+// d'accueil : l'app n'a plus qu'une seule anatomie.
 
-/** Correspondance groupeMusculaire (FR, domaine) -> muscles reels du modele anatomique */
-export const GROUPE_VERS_MUSCLES: Record<string, { view: "anterior" | "posterior"; muscles: Muscle[] }> = {
-  dos: { view: "posterior", muscles: ["trapezius", "upper-back", "lower-back"] },
-  biceps: { view: "anterior", muscles: ["biceps"] },
-  triceps: { view: "posterior", muscles: ["triceps"] },
-  epaules: { view: "anterior", muscles: ["front-deltoids"] },
-  pectoraux: { view: "anterior", muscles: ["chest"] },
-  jambes: { view: "anterior", muscles: ["quadriceps", "abductors"] },
-  "avant-bras": { view: "anterior", muscles: ["forearm"] },
-  abdominaux: { view: "anterior", muscles: ["abs", "obliques"] },
-  mollets: { view: "posterior", muscles: ["calves"] },
-};
+import { useId, useMemo } from "react";
+import CorpsSvg, { meilleureVue } from "./anatomie/CorpsSvg";
+import { GROUPE_VERS_REGIONS, GROUPE_LABELS, type BaseRegion, type NiveauVolume } from "@/lib/domain/anatomie";
+import type { GroupeMusculaire } from "@/lib/domain/types";
 
 export default function MuscleSilhouette({ groupe }: { groupe: string }) {
-  const config = GROUPE_VERS_MUSCLES[groupe];
+  const uid = useId().replace(/:/g, "");
+  const regions = GROUPE_VERS_REGIONS[groupe as GroupeMusculaire];
 
-  if (!config) {
+  const { vue, intensites, surlignes } = useMemo(() => {
+    const set = new Set<BaseRegion>(regions ?? []);
+    const map: Record<BaseRegion, NiveauVolume> = {};
+    for (const r of set) map[r] = 4;
+    return { vue: meilleureVue(set), intensites: map, surlignes: set };
+  }, [regions]);
+
+  if (!regions) {
     return <div className="h-20 w-14 shrink-0 rounded-lg bg-[var(--bg-card-2)]" aria-hidden="true" />;
   }
 
   return (
     <div
-      className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg"
-      style={{
-        background: "radial-gradient(circle at 50% 30%, rgba(var(--accent-rgb),0.12), transparent 70%)",
-      }}
-      role="img"
-      aria-label={`Silhouette du groupe musculaire ${groupe}`}
+      className="relative flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg"
+      style={{ background: "radial-gradient(circle at 50% 35%, rgba(var(--accent-rgb),0.14), transparent 70%)" }}
     >
-      <Model
-        type={config.view}
-        data={[{ name: groupe, muscles: config.muscles, frequency: 1 }]}
-        bodyColor="#343742"
-        highlightedColors={["#4C6FFF"]}
-        style={{ width: "100%", height: "100%" }}
-        svgStyle={{ width: "100%", height: "100%" }}
+      <CorpsSvg
+        vue={vue}
+        uid={uid}
+        intensites={intensites}
+        surlignes={surlignes}
+        hauteur="76px"
+        halo={false}
+        titre={`Zone travaillée : ${GROUPE_LABELS[groupe as GroupeMusculaire] ?? groupe}`}
       />
     </div>
   );

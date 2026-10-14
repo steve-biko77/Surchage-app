@@ -7,11 +7,13 @@ import { todayISO } from "@/lib/domain/services";
 
 const JOURS = ["L", "M", "M", "J", "V", "S", "D"];
 const JOURS_COURTS = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
+// Même rampe de volume que la carte musculaire : une seule échelle d'intensité
+// dans toute l'app. Ces trois cases étaient restées en brun orangé.
 const CELL_STYLES = [
   "bg-[var(--bg-card)]",
-  "bg-[#2a2210]",
-  "bg-[#3a2410]",
-  "bg-[#4a2308] shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)]",
+  "bg-[var(--anat-1)]",
+  "bg-[var(--anat-2)]",
+  "bg-[var(--anat-3)] shadow-[0_0_8px_rgba(var(--accent-rgb),0.35)]",
 ];
 
 type SeancePlanifiee = { id: string; date: string; nom: string; statut: "planifiee" | "realisee" };
@@ -90,12 +92,12 @@ export default function CalendrierClient() {
                 title={planifiee ? planifiee.nom : undefined}
                 className={`flex h-16 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] ${
                   niveau > 0 ? CELL_STYLES[niveau] : "bg-[var(--bg-card)]"
-                } ${planifiee ? "border-dashed border-[#3B82C4]" : j.estAujourdhui ? "border-[var(--accent)]/60" : "border-[var(--card-border)]"}`}
+                } ${planifiee ? "border-dashed border-[var(--info)]" : j.estAujourdhui ? "border-[var(--accent)]/60" : "border-[var(--card-border)]"}`}
               >
                 {niveau > 0 ? (
                   <Flame className="h-3 w-3 text-[var(--accent-text)]" fill="var(--accent)" aria-hidden="true" />
                 ) : planifiee ? (
-                  <CalendarClock className="h-3 w-3 text-[#3B82C4]" aria-hidden="true" />
+                  <CalendarClock className="h-3 w-3 text-[var(--info)]" aria-hidden="true" />
                 ) : (
                   <Minus className="h-3 w-3 text-[var(--grey)]/50" aria-hidden="true" />
                 )}
@@ -130,12 +132,12 @@ export default function CalendrierClient() {
               title={planifiee ? planifiee.nom : undefined}
               className={`flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] ${
                 niveau > 0 ? CELL_STYLES[niveau] : "bg-[var(--bg-card)]"
-              } ${planifiee ? "border-dashed border-[#3B82C4]" : isToday ? "border-[var(--accent)]" : "border-transparent"}`}
+              } ${planifiee ? "border-dashed border-[var(--info)]" : isToday ? "border-[var(--accent)]" : "border-transparent"}`}
             >
               {niveau > 0 ? (
                 <Flame className="h-3 w-3 text-[var(--accent-text)]" fill="var(--accent)" aria-hidden="true" />
               ) : planifiee ? (
-                <CalendarClock className="h-3 w-3 text-[#3B82C4]" aria-hidden="true" />
+                <CalendarClock className="h-3 w-3 text-[var(--info)]" aria-hidden="true" />
               ) : (
                 <Minus className="h-3 w-3 text-[var(--grey)]/50" aria-hidden="true" />
               )}

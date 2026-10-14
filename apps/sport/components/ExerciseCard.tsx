@@ -105,7 +105,7 @@ export default function ExerciseCard({
           <Badge variant="default" className="mt-1.5">{exercice.groupeMusculaire}</Badge>
 
           {exercice.cible ? (
-            <p className="mt-2 flex items-start gap-1.5 text-xs text-[#ffd8c2]">
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-[var(--chalk)]">
               <Target className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent-text)]" aria-hidden="true" />
               <span>
                 <b className="font-heading text-[13px] tracking-wide">
@@ -140,7 +140,7 @@ export default function ExerciseCard({
             variant="ghost"
             size="sm"
             onClick={() => setOpen(!open)}
-            className="mt-2 -ml-2 h-8 px-2 text-[#3B82C4] hover:text-[#5ba3e0]"
+            className="mt-2 -ml-2 h-8 px-2 text-[var(--info)] hover:text-[var(--info-text)]"
           >
             {open ? (
               <>Fermer <ChevronDown className="h-3.5 w-3.5 rotate-180 transition-transform" /></>

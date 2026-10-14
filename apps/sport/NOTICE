@@ -1,0 +1,20 @@
+Surcharge — Module Sport (Productivity Core)
+
+Ce produit inclut des travaux tiers.
+
+-------------------------------------------------------------------------------
+body-muscles
+Copyright 2024 Ivan Vulović
+https://github.com/vulovix/body-muscles
+
+Sous licence Apache License, Version 2.0 :
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Usage dans ce projet : seules les données de tracé SVG (FRONT_MUSCLES,
+BACK_MUSCLES) sont utilisées, pour la carte musculaire. Le rendu — socle,
+lumière directionnelle, échelle d'intensité, interactions — est propre à
+ce projet (components/anatomie/CorpsSvg.tsx).
+
+Le texte intégral de la licence est fourni avec le paquet, dans
+node_modules/body-muscles/LICENSE.
+-------------------------------------------------------------------------------

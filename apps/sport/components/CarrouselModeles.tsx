@@ -62,7 +62,7 @@ export default function CarrouselModeles({ exercices }: { exercices: Exercice[] 
         {modeles.map((m, i) => {
           const groupe = dominante(m.exerciceIds);
           return (
-            <Card key={i} className="w-56 shrink-0 snap-start border-[#3B82C4]/30">
+            <Card key={i} className="w-56 shrink-0 snap-start border-[var(--info)]/30">
               <CardContent className="pt-4">
                 <p className="truncate font-heading text-base font-bold">{m.nom}</p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">

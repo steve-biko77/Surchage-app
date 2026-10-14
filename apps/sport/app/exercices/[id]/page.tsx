@@ -25,7 +25,7 @@ export default async function FicheExercicePage({ params }: { params: Promise<{ 
 
   return (
     <div>
-      <Link href="/entrainements" className="mb-4 inline-flex items-center gap-1.5 text-sm text-[#3B82C4]">
+      <Link href="/entrainements" className="mb-4 inline-flex items-center gap-1.5 text-sm text-[var(--info)]">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Retour
       </Link>
 
