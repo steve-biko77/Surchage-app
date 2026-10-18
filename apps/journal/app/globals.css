@@ -769,3 +769,49 @@ button.btn-primary:disabled { opacity: 0.55; cursor: default; }
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.01ms !important; }
   .spot::after { display: none; }
 }
+
+/* ═══════════════════ Notifications push ═══════════════════ */
+
+.push-bloc {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px; padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.push-bloc.actif {
+  border-color: var(--line-2);
+  background: linear-gradient(to right, var(--brand-wash), var(--surface-2));
+}
+.push-icone { width: 20px; height: 20px; flex-shrink: 0; color: var(--brand); }
+.push-texte { flex: 1; min-width: 0; }
+.push-texte strong {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 13.5px; font-weight: 600; color: var(--ink);
+}
+.push-texte p { margin-top: 2px; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+.push-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.push-actions button {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 8px 13px; border-radius: 10px; border: 0;
+  font-size: 13px; font-weight: 600; color: #fff;
+  background: var(--brand); cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+}
+.push-actions button:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-1px); }
+.push-actions button:disabled { opacity: 0.6; cursor: default; }
+.push-actions button.discret {
+  color: var(--ink-2); background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.push-actions button.discret:hover:not(:disabled) { color: var(--ink); background: var(--surface-3); }
+
+.inline-icone { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; }
+.tourne { animation: push-tourne 0.9s linear infinite; }
+@keyframes push-tourne { to { transform: rotate(360deg); } }
+
+@media (max-width: 560px) {
+  .push-bloc { flex-wrap: wrap; }
+  .push-actions { width: 100%; }
+  .push-actions button { flex: 1; justify-content: center; }
+}

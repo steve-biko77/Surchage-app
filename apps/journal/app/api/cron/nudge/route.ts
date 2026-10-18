@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { autoriseAppelInterne } from "@/lib/nudge/auth";
-import { tachesRepository, joursValidesRepository, nudgeStateRepository, journalCalendarRepository } from "@/lib/adapters/repositories";
+import { tachesRepository, joursValidesRepository, nudgeStateRepository, journalCalendarRepository, pushSubscriptionsRepository } from "@/lib/adapters/repositories";
+import { envoyerPush } from "@/lib/nudge/push";
 import { todayISO, heureLocaleParis } from "@/lib/domain/services";
 import { materialiserTachesRecurrentes } from "@/lib/domain/recurrence";
 import { creerEvenementRappel } from "@/lib/google/calendar";
@@ -39,16 +40,41 @@ export async function POST(req: Request) {
     if (dejaNotifieRecemment) {
       return NextResponse.json({ envoye: false, raison: "deja notifie recemment (anti-doublon)" });
     }
-    const calendrier = await journalCalendarRepository.get();
-    if (!calendrier) {
-      return NextResponse.json(
-        { envoye: false, raison: "Google Calendar non connecte -- visite /api/auth/google/start" },
-        { status: 409 }
-      );
+
+    const canaux = { push: 0, perimes: 0, calendrier: false };
+
+    // Canal principal : notification sur les appareils abonnes.
+    const abonnements = await pushSubscriptionsRepository.all();
+    if (abonnements.length > 0) {
+      const r = await envoyerPush(abonnements, { titre: "Journal", corps: message, url: "/jour" });
+      canaux.push = r.envoyes;
+      canaux.perimes = r.perimes.length;
+      // Un abonnement revoque par le navigateur n'a plus aucune valeur.
+      for (const endpoint of r.perimes) await pushSubscriptionsRepository.supprimer(endpoint);
     }
-    await creerEvenementRappel(calendrier.googleCalendarId, message);
+
+    // Canal secondaire. Son absence renvoyait un 409, qui faisait echouer le
+    // workflow GitHub a chaque passage en journee : ce n'est plus une erreur.
+    try {
+      const calendrier = await journalCalendarRepository.get();
+      if (calendrier) {
+        await creerEvenementRappel(calendrier.googleCalendarId, message);
+        canaux.calendrier = true;
+      }
+    } catch {
+      // Un calendrier en panne ne doit pas annuler un push deja parti.
+    }
+
+    if (canaux.push === 0 && !canaux.calendrier) {
+      return NextResponse.json({
+        envoye: false,
+        raison: "aucun canal disponible : aucun appareil abonne et pas de calendrier connecte",
+        canaux,
+      });
+    }
+
     await nudgeStateRepository.enregistrerNotification(message);
-    return NextResponse.json({ envoye: true, message });
+    return NextResponse.json({ envoye: true, message, canaux });
   }
 
   const taches = await tachesRepository.parDate(today);
