@@ -4,10 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { exercicesRepository, exercicesMusclesRepository } from "@/lib/adapters/repositories";
-import MuscleSilhouette from "@/components/MuscleSilhouette";
-import MuscleMapDetail from "@/components/MuscleMapDetail";
+import { ficheParNom, musclesExercice } from "@/lib/domain/referentielExercices";
+import FicheExerciceVue from "@/components/FicheExerciceVue";
 import { Badge } from "@/components/ui/badge";
-import type { MuscleDetail, RoleMuscle } from "@/lib/domain/types";
+import type { GroupeMusculaire, MuscleDetail, RoleMuscle } from "@/lib/domain/types";
 
 const TYPES_CHARGE_LABELS: Record<string, string> = {
   haltere: "Haltère",
@@ -21,7 +21,24 @@ export default async function FicheExercicePage({ params }: { params: Promise<{ 
   const exercice = await exercicesRepository.parId(id);
   if (!exercice) notFound();
 
-  const muscles = await exercicesMusclesRepository.parExercice(id);
+  // La base fait autorité si elle est renseignée (surcharge manuelle) ; sinon
+  // le référentiel ; sinon le groupe musculaire, pour que la carte ne reste
+  // jamais éteinte.
+  const surcharge = await exercicesMusclesRepository.parExercice(id);
+  const muscles = musclesExercice(
+    exercice.nom,
+    exercice.groupeMusculaire as GroupeMusculaire,
+    surcharge.map((m) => ({ muscle: m.muscle as MuscleDetail, role: m.role as RoleMuscle }))
+  );
+  const fiche = ficheParNom(exercice.nom);
+
+  const enDuree = exercice.uniteMesure === "duree";
+  const cibles =
+    enDuree
+      ? exercice.dureePlancherSec != null && exercice.dureePlafondSec != null
+        ? { haut: "duree", basGauche: `${exercice.dureePlancherSec}s`, basDroite: `${exercice.dureePlafondSec}s` }
+        : null
+      : { haut: "reps", basGauche: String(exercice.repPlancher), basDroite: String(exercice.repPlafond) };
 
   return (
     <div>
@@ -29,48 +46,22 @@ export default async function FicheExercicePage({ params }: { params: Promise<{ 
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Retour
       </Link>
 
-      <div className="mb-4 flex items-start gap-3">
-        <MuscleSilhouette groupe={exercice.groupeMusculaire} />
-        <div>
-          <h2 className="font-heading text-2xl font-bold leading-tight">{exercice.nom}</h2>
-          <div className="mt-1.5 flex gap-1.5">
-            <Badge className="capitalize">{exercice.groupeMusculaire}</Badge>
-            <Badge variant="info">{TYPES_CHARGE_LABELS[exercice.typeCharge] ?? exercice.typeCharge}</Badge>
-          </div>
+      <header className="mb-5">
+        <h2 className="font-heading text-3xl font-bold leading-tight">{exercice.nom}</h2>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <Badge className="capitalize">{exercice.groupeMusculaire}</Badge>
+          <Badge variant="info">{TYPES_CHARGE_LABELS[exercice.typeCharge] ?? exercice.typeCharge}</Badge>
+          {fiche && fiche.nom !== exercice.nom && <Badge variant="info">Fiche&nbsp;: {fiche.nom}</Badge>}
         </div>
-      </div>
+      </header>
 
-      <MuscleMapDetail muscles={muscles.map((m) => ({ muscle: m.muscle as MuscleDetail, role: m.role as RoleMuscle }))} />
-
-      {exercice.uniteMesure === "duree" ? (
-        exercice.dureePlancherSec != null && exercice.dureePlafondSec != null ? (
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
-              <div className="font-heading text-lg font-black">{exercice.dureePlancherSec}s</div>
-              <div className="text-[10px] uppercase text-[var(--grey)]">Durée plancher</div>
-            </div>
-            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
-              <div className="font-heading text-lg font-black">{exercice.dureePlafondSec}s</div>
-              <div className="text-[10px] uppercase text-[var(--grey)]">Durée plafond</div>
-            </div>
-          </div>
-        ) : (
-          <p className="mt-4 rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center text-xs text-[var(--grey)]">
-            Journal de durée — pas de cible auto pour cet exercice.
-          </p>
-        )
-      ) : (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
-            <div className="font-heading text-lg font-black">{exercice.repPlancher}</div>
-            <div className="text-[10px] uppercase text-[var(--grey)]">Reps plancher</div>
-          </div>
-          <div className="rounded-xl border border-[var(--card-border)] bg-[var(--bg-card)] p-3 text-center">
-            <div className="font-heading text-lg font-black">{exercice.repPlafond}</div>
-            <div className="text-[10px] uppercase text-[var(--grey)]">Reps plafond</div>
-          </div>
-        </div>
-      )}
+      <FicheExerciceVue
+        groupeMusculaire={exercice.groupeMusculaire}
+        primaires={muscles.primaires}
+        secondaires={muscles.secondaires}
+        fiche={fiche}
+        cibles={cibles}
+      />
     </div>
   );
 }

@@ -47,7 +47,21 @@ export async function resoudreSeanceDuJour() {
       const seriesAujourdhui = historique
         .filter((s) => s.date === today)
         .map((s) => ({ id: s.id, poids: s.poids, reps: s.reps, sets: s.sets, dureeSecondes: s.dureeSecondes, note: s.note }));
-      return { ...exo, cible, seriesAujourdhui };
+
+      // Dernière séance antérieure : la saisie l'affiche en regard, pour ne pas
+      // avoir à se souvenir de ce qu'on avait mis la fois d'avant.
+      const dates = [...new Set(historique.filter((s) => s.date < today).map((s) => s.date))].sort();
+      const derniereDate = dates[dates.length - 1] ?? null;
+      const derniereSeance = derniereDate
+        ? {
+            date: derniereDate,
+            series: historique
+              .filter((s) => s.date === derniereDate)
+              .map((s) => ({ poids: s.poids, reps: s.reps, sets: s.sets, dureeSecondes: s.dureeSecondes })),
+          }
+        : null;
+
+      return { ...exo, cible, seriesAujourdhui, derniereSeance };
     })
   );
 
