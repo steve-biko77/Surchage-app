@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Minus, Timer, X } from "lucide-react";
+import { Check, Plus, Minus, X, MessageSquarePlus } from "lucide-react";
 import { todayISO } from "@/lib/domain/services";
 
 export type SerieSaisie = {
@@ -22,6 +22,7 @@ export type SerieSaisie = {
   poids: number;
   reps: number;
   dureeSec: number;
+  note: string;
   validee: boolean;
 };
 
@@ -160,12 +161,14 @@ export default function SaisieSerie({
       poids: depart.poids,
       reps: depart.reps,
       dureeSec: depart.dureeSec,
+      note: "",
       validee: false,
     }))
   );
   const [enCours, setEnCours] = useState<number | null>(null);
   const [eclat, setEclat] = useState<number | null>(null);
   const [repos, setRepos] = useState<number | null>(null);
+  const [notesOuvertes, setNotesOuvertes] = useState<Set<number>>(new Set());
 
   // Décompte du repos.
   useEffect(() => {
@@ -178,15 +181,15 @@ export default function SaisieSerie({
     return () => clearTimeout(t);
   }, [repos]);
 
-  const maj = useCallback((k: number, champ: keyof SerieSaisie, v: number) => {
+  const maj = useCallback((k: number, champ: keyof SerieSaisie, v: number | string) => {
     setLignes((ls) => ls.map((l) => (l.cle === k ? { ...l, [champ]: v } : l)));
   }, []);
 
   async function valider(ligne: SerieSaisie) {
     setEnCours(ligne.cle);
     const corps = auDuree
-      ? { date: todayISO(), exerciceId, sets: 1, dureeSecondes: ligne.dureeSec, note: "" }
-      : { date: todayISO(), exerciceId, poids: ligne.poids, reps: ligne.reps, sets: 1, note: "" };
+      ? { date: todayISO(), exerciceId, sets: 1, dureeSecondes: ligne.dureeSec, note: ligne.note }
+      : { date: todayISO(), exerciceId, poids: ligne.poids, reps: ligne.reps, sets: 1, note: ligne.note };
 
     if (!simulation) {
       const res = await fetch("/api/series", {
@@ -218,6 +221,7 @@ export default function SaisieSerie({
         poids: derniere?.poids ?? depart.poids,
         reps: derniere?.reps ?? depart.reps,
         dureeSec: derniere?.dureeSec ?? depart.dureeSec,
+        note: "",
         validee: false,
       },
     ]);
@@ -248,6 +252,7 @@ export default function SaisieSerie({
             key={l.cle}
             className={`saisie-ligne${l.validee ? " faite" : ""}${eclat === l.cle ? " eclat" : ""}`}
           >
+            <div className="saisie-ligne-haut">
             <span className="saisie-num" aria-hidden="true">{i + 1}</span>
 
             {auDuree ? (
@@ -271,6 +276,17 @@ export default function SaisieSerie({
               </>
             )}
 
+            {!l.validee && !notesOuvertes.has(l.cle) && !l.note && (
+              <button
+                type="button"
+                className="saisie-note-ouvrir"
+                onClick={() => setNotesOuvertes((n) => new Set(n).add(l.cle))}
+                aria-label={`Ajouter une note à la série ${i + 1}`}
+              >
+                <MessageSquarePlus className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
+
             <button
               type="button"
               className="saisie-valider"
@@ -280,6 +296,22 @@ export default function SaisieSerie({
             >
               <Check className="h-5 w-5" aria-hidden="true" />
             </button>
+            </div>
+
+            {/* Note de série : l'ancien formulaire en avait une, la saisie
+                série par série l'avait perdue. Une par série plutôt qu'une
+                pour tout l'exercice, puisque chaque série est sa propre ligne. */}
+            {(notesOuvertes.has(l.cle) || l.note) && (
+              <input
+                className="saisie-note"
+                type="text"
+                placeholder="Note sur cette série…"
+                value={l.note}
+                disabled={l.validee}
+                onChange={(e) => maj(l.cle, "note", e.target.value)}
+                aria-label={`Note sur la série ${i + 1}`}
+              />
+            )}
           </li>
         ))}
       </ul>

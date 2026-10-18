@@ -2,11 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Star, CheckCircle2, Target, ChevronDown, Plus } from "lucide-react";
+import { Star, CheckCircle2, Target, ChevronDown, Plus, LineChart } from "lucide-react";
 import MuscleSilhouette from "./MuscleSilhouette";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import SaisieSerie from "./SaisieSerie";
+import FocusPerf from "./FocusPerf";
 import { Badge } from "./ui/badge";
 import { todayISO } from "@/lib/domain/services";
 
@@ -51,6 +52,7 @@ export default function ExerciseCard({
   const cibleDureeSec = exercice.cible?.mode === "duree" ? exercice.cible.dureeCibleSec : 30;
 
   const [open, setOpen] = useState(false);
+  const [focus, setFocus] = useState(false);
 
   const dejaFait = exercice.seriesAujourdhui.length > 0;
   const rayer = rayerSiComplete && dejaFait;
@@ -110,11 +112,12 @@ export default function ExerciseCard({
             </div>
           )}
 
+          <div className="mt-2 flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setOpen(!open)}
-            className="mt-2 -ml-2 h-8 px-2 text-[var(--info)] hover:text-[var(--info-text)]"
+            className="-ml-2 h-8 px-2 text-[var(--info)] hover:text-[var(--info-text)]"
           >
             {open ? (
               <>Fermer <ChevronDown className="h-3.5 w-3.5 rotate-180 transition-transform" /></>
@@ -124,6 +127,12 @@ export default function ExerciseCard({
               <>Logger une série <ChevronDown className="h-3.5 w-3.5" /></>
             )}
           </Button>
+
+          {/* Coup d'œil sur la progression, sans quitter la séance. */}
+          <button type="button" className="focus-bouton" onClick={() => setFocus(true)}>
+            <LineChart className="h-3.5 w-3.5" aria-hidden="true" /> Mes perfs
+          </button>
+          </div>
         </div>
       </div>
 
@@ -142,6 +151,10 @@ export default function ExerciseCard({
         />
       )}
 
+
+      {focus && (
+        <FocusPerf exerciceId={exercice.id} nom={exercice.nom} onClose={() => setFocus(false)} />
+      )}
     </Card>
   );
 }

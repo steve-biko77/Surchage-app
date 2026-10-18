@@ -618,7 +618,7 @@ input:focus, select:focus, textarea:focus {
 .saisie-lignes { display: flex; flex-direction: column; gap: 8px; }
 
 .saisie-ligne {
-  display: flex; align-items: flex-end; gap: 10px;
+  display: flex; flex-direction: column; gap: 8px;
   padding: 9px 10px; border-radius: 13px;
   border: 1px solid var(--card-border); background: var(--bg-card);
   transition: border-color 0.3s, background 0.3s, opacity 0.3s;
@@ -733,3 +733,118 @@ input:focus, select:focus, textarea:focus {
 }
 .saisie-ajout:hover { background: var(--accent-wash); border-color: var(--accent); }
 .saisie-compte { font-size: 11.5px; color: var(--grey); font-variant-numeric: tabular-nums; }
+
+/* ═══════════════════ Focus perf ═══════════════════ */
+
+.focus-fond {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px;
+  background: color-mix(in oklab, var(--bg) 72%, transparent);
+  backdrop-filter: blur(7px);
+  animation: focus-fond-entre 0.2s ease-out;
+}
+@keyframes focus-fond-entre { from { opacity: 0; } to { opacity: 1; } }
+
+.focus-panneau {
+  width: 100%; max-width: 540px;
+  padding: 18px; border-radius: 22px;
+  border: 1px solid var(--card-border);
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(var(--accent-rgb), 0.12), transparent 70%),
+    var(--bg-card);
+  box-shadow: 0 30px 70px -30px #000;
+  animation: focus-panneau-entre 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes focus-panneau-entre {
+  from { opacity: 0; transform: translateY(12px) scale(0.975); }
+  to   { opacity: 1; transform: none; }
+}
+
+.focus-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.focus-k {
+  display: block; font-size: 9.5px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--accent-text);
+}
+.focus-tete h3 {
+  margin-top: 2px;
+  font-family: var(--font-heading), system-ui;
+  font-size: 20px; font-weight: 800; line-height: 1.15; color: var(--chalk);
+}
+.focus-tete button {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 32px; height: 32px; border: 0; border-radius: 10px;
+  color: var(--grey); background: var(--bg-card-2); cursor: pointer;
+  transition: color 0.14s, background 0.14s;
+}
+.focus-tete button:hover { color: var(--chalk); background: var(--card-border); }
+
+.focus-stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 12px; }
+.focus-stat {
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 140px;
+  padding: 9px 11px; border-radius: 12px;
+  color: var(--grey); background: var(--bg-card-2);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+}
+.focus-stat b {
+  display: block; font-family: var(--font-heading), system-ui;
+  font-size: 15px; font-weight: 700; color: var(--chalk);
+  font-variant-numeric: tabular-nums;
+}
+.focus-stat span { font-size: 10.5px; }
+.focus-stat.hausse { color: var(--success); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--success) 35%, transparent); }
+.focus-stat.baisse { color: var(--danger); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--danger) 35%, transparent); }
+
+.focus-graphe { height: 190px; margin: 0 -4px; }
+
+.focus-note { margin-top: 10px; font-size: 11.5px; line-height: 1.5; color: var(--grey); }
+.focus-vide { padding: 26px 4px; text-align: center; font-size: 13.5px; color: var(--grey); }
+
+/* Attente : trois points qui respirent, plutôt qu'un vide. */
+.focus-attente { display: flex; align-items: center; justify-content: center; gap: 7px; height: 200px; }
+.focus-attente span {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent-deep);
+  animation: focus-pulse 1.1s ease-in-out infinite;
+}
+.focus-attente span:nth-child(2) { animation-delay: 0.15s; }
+.focus-attente span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes focus-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1); }
+}
+
+/* Déclencheur sur la carte d'exercice */
+.focus-bouton {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 9px; border: 1px solid var(--card-border);
+  font-size: 12px; color: var(--accent-text); background: transparent;
+  cursor: pointer; transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+.focus-bouton:hover {
+  color: var(--chalk); background: var(--accent-wash); border-color: var(--accent);
+}
+
+/* Ligne de saisie : la rangée de contrôles, puis la note éventuelle. */
+.saisie-ligne-haut { display: flex; align-items: flex-end; gap: 10px; }
+
+.saisie-note-ouvrir {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 34px; height: 36px; border: 0; border-radius: 10px;
+  color: var(--grey); background: var(--bg-card-2); cursor: pointer;
+  transition: color 0.14s, background 0.14s;
+}
+.saisie-note-ouvrir:hover { color: var(--accent-text); background: var(--accent-wash); }
+
+.saisie-note {
+  width: 100%; padding: 7px 10px; border-radius: 9px;
+  font-size: 12.5px; color: var(--chalk);
+  background: var(--bg-card-2);
+  border: 1px solid var(--card-border);
+  animation: saisie-note-entre 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.saisie-note::placeholder { color: var(--grey); }
+.saisie-note:disabled { color: var(--grey); opacity: 0.8; }
+@keyframes saisie-note-entre {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
