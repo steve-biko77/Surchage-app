@@ -10,6 +10,7 @@ import {
   googleAuth,
   journalCalendar,
   nudgeState,
+  pushSubscriptions,
 } from "../db/schema";
 import { eq, and, gte, lte, lt, desc, isNotNull } from "drizzle-orm";
 
@@ -268,5 +269,40 @@ export const nudgeStateRepository = {
       .update(nudgeState)
       .set({ lastNotifiedAt: new Date(), lastMessage: message })
       .where(eq(nudgeState.id, etat.id));
+  },
+};
+
+/**
+ * Abonnements Web Push. L'endpoint identifie l'appareil : un reabonnement
+ * du meme navigateur remplace la ligne au lieu d'en creer une seconde.
+ */
+export const pushSubscriptionsRepository = {
+  async all() {
+    return db.select().from(pushSubscriptions);
+  },
+  async enregistrer(input: { endpoint: string; p256dh: string; auth: string; libelle?: string | null }) {
+    const [row] = await db
+      .insert(pushSubscriptions)
+      .values({
+        endpoint: input.endpoint,
+        p256dh: input.p256dh,
+        auth: input.auth,
+        libelle: input.libelle ?? null,
+      })
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        set: { p256dh: input.p256dh, auth: input.auth, libelle: input.libelle ?? null },
+      })
+      .returning();
+    return row;
+  },
+  async supprimer(endpoint: string) {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  },
+  async marquerSucces(endpoint: string) {
+    await db
+      .update(pushSubscriptions)
+      .set({ lastSuccessAt: new Date() })
+      .where(eq(pushSubscriptions.endpoint, endpoint));
   },
 };

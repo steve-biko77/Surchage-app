@@ -4,6 +4,7 @@ import "./globals.css";
 import { Sidebar, MobileBar } from "@/components/Nav";
 import ToastHost from "@/components/ToastHost";
 import InstallBanner from "@/components/InstallBanner";
+import PushOptIn from "@/components/PushOptIn";
 import OpeningSequence from "@/components/OpeningSequence";
 import SpotlightLayer from "@/components/SpotlightLayer";
 
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Sidebar />
           <div className="content">
             <InstallBanner />
+            <PushOptIn />
             {children}
           </div>
         </div>

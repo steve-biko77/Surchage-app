@@ -82,3 +82,21 @@ export const nudgeState = pgTable("nudge_state", {
   lastMessage: text("last_message"),
   lastActionAt: timestamp("last_action_at"),
 });
+
+/**
+ * Abonnements Web Push. Une ligne par appareil ayant accepte les
+ * notifications : l'endpoint fourni par le navigateur, plus les deux cles
+ * de chiffrement qu'il impose (p256dh et auth). L'endpoint est unique,
+ * c'est lui qui identifie l'appareil.
+ */
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  /** Pour reconnaitre l'appareil dans la liste ("iPhone de Steve"). */
+  libelle: text("libelle"),
+  createdAt: timestamp("created_at").defaultNow(),
+  /** Dernier envoi reussi : sert a reperer les abonnements morts. */
+  lastSuccessAt: timestamp("last_success_at"),
+});
