@@ -398,7 +398,7 @@ export default function EntrainementsClient({ exercices, programmes }: { exercic
           <Card key={e.id} className={`mb-2 ${dejaAjoute ? "border-[var(--accent)]/50" : ""}`}>
             <div className="flex items-center gap-3 p-3">
               <Link href={`/exercices/${e.id}`} aria-label={`Voir la fiche de ${e.nom}`}>
-                <MuscleSilhouette groupe={e.groupeMusculaire} />
+                <MuscleSilhouette groupe={e.groupeMusculaire} nom={e.nom} />
               </Link>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">{e.nom}</p>

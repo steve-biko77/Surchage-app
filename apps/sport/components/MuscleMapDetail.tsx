@@ -20,7 +20,7 @@ export default function MuscleMapDetail({
 }) {
   const uid = useId().replace(/:/g, "");
 
-  const { intensites, sollicites, vues } = useMemo(() => {
+  const { intensites, vues } = useMemo(() => {
     const map: Record<BaseRegion, NiveauVolume> = {};
     const set = new Set<BaseRegion>();
     // Les secondaires d'abord : un muscle à la fois primaire et secondaire
@@ -34,7 +34,7 @@ export default function MuscleMapDetail({
       }
     }
     const v = (["face", "dos"] as Vue[]).filter((x) => vueMontre(x, set));
-    return { intensites: map, sollicites: set, vues: v.length > 0 ? v : (["face"] as Vue[]) };
+    return { intensites: map, vues: v.length > 0 ? v : (["face"] as Vue[]) };
   }, [muscles]);
 
   if (muscles.length === 0) {
@@ -68,12 +68,14 @@ export default function MuscleMapDetail({
       <div className="flex items-center justify-center gap-5 px-2 py-4">
         {vues.map((v) => (
           <div key={v} className="flex flex-col items-center">
+            {/* Pas de `surlignes` ici : il repeint toutes les portions dans la
+                même teinte de surlignage et écrase la distinction primaire /
+                secondaire. Ce sont les paliers (4 vs 2) qui la portent. */}
             <CorpsSvg
               vue={v}
               uid={uid}
               intensites={intensites}
-              surlignes={sollicites}
-              hauteur="190px"
+              hauteur="var(--fiche-corps-h, 190px)"
               titre={`Muscles sollicités, vue ${v === "face" ? "de face" : "de dos"}`}
             />
             <p className="mt-1.5 text-[10px] uppercase tracking-widest text-[var(--grey)]">

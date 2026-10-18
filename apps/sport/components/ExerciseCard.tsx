@@ -6,6 +6,7 @@ import { Star, CheckCircle2, Target, ChevronDown, Plus } from "lucide-react";
 import MuscleSilhouette from "./MuscleSilhouette";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
+import SaisieSerie from "./SaisieSerie";
 import { Badge } from "./ui/badge";
 import { todayISO } from "@/lib/domain/services";
 
@@ -14,14 +15,6 @@ type Cible =
   | { mode: "duree"; dureeCibleSec: number; justification: string }
   | null;
 type SerieDuJour = { id: string; poids: number; reps: number; sets: number; dureeSecondes?: number | null; note?: string | null };
-
-/** Accepte "90" ou "1:30" et renvoie un nombre de secondes */
-function parseDuree(input: string): number {
-  const m = input.trim().match(/^(\d+):(\d{1,2})$/);
-  if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-  const n = parseFloat(input);
-  return Number.isNaN(n) ? 0 : Math.round(n);
-}
 
 function formatDureeLabel(sec: number): string {
   if (sec < 60) return `${sec}s`;
@@ -43,6 +36,10 @@ export default function ExerciseCard({
     uniteMesure: string;
     cible: Cible;
     seriesAujourdhui: SerieDuJour[];
+    derniereSeance?: {
+      date: string;
+      series: Array<{ poids: number; reps: number; sets: number; dureeSecondes?: number | null }>;
+    } | null;
   };
   /** Met en avant cet exercice comme "le prochain a faire" (vue /entrainement-en-cours) */
   estProchain?: boolean;
@@ -53,30 +50,7 @@ export default function ExerciseCard({
   const auDuree = exercice.uniteMesure === "duree";
   const cibleDureeSec = exercice.cible?.mode === "duree" ? exercice.cible.dureeCibleSec : 30;
 
-  const [poids, setPoids] = useState(exercice.cible?.mode === "reps" ? exercice.cible.poidsCible : 0);
-  const [reps, setReps] = useState(exercice.cible?.mode === "reps" ? exercice.cible.repsCible : 10);
-  const [duree, setDuree] = useState(String(cibleDureeSec));
-  const [sets, setSets] = useState(auDuree ? 1 : 3);
-  const [note, setNote] = useState("");
-  const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
-
-  async function enregistrer() {
-    setSaving(true);
-    await fetch("/api/series", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        auDuree
-          ? { date: todayISO(), exerciceId: exercice.id, sets, dureeSecondes: parseDuree(duree), note }
-          : { date: todayISO(), exerciceId: exercice.id, poids, reps, sets, note }
-      ),
-    });
-    setSaving(false);
-    setNote("");
-    setOpen(false);
-    router.refresh();
-  }
 
   const dejaFait = exercice.seriesAujourdhui.length > 0;
   const rayer = rayerSiComplete && dejaFait;
@@ -90,7 +64,7 @@ export default function ExerciseCard({
       {(exercice.prioritaire || estProchain) && <div className="h-0.5 w-full bg-gradient-to-r from-[var(--accent)] to-transparent" aria-hidden="true" />}
       <div className="flex items-start gap-3 p-4">
         <Link href={`/exercices/${exercice.id}`} aria-label={`Voir la fiche de ${exercice.nom}`}>
-          <MuscleSilhouette groupe={exercice.groupeMusculaire} />
+          <MuscleSilhouette groupe={exercice.groupeMusculaire} nom={exercice.nom} />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -154,43 +128,20 @@ export default function ExerciseCard({
       </div>
 
       {open && (
-        <div className="grid grid-cols-3 gap-2 border-t border-[var(--card-border)] bg-black/10 p-4">
-          {auDuree ? (
-            <>
-              <div className="col-span-2">
-                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor={`duree-${exercice.id}`}>Durée (s ou min:s)</label>
-                <input id={`duree-${exercice.id}`} type="text" inputMode="text" placeholder="ex: 45 ou 1:30" value={duree} onChange={(e) => setDuree(e.target.value)} className="w-full text-sm" />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor={`sets-${exercice.id}`}>Séries</label>
-                <input id={`sets-${exercice.id}`} type="number" inputMode="numeric" value={sets} onChange={(e) => setSets(parseInt(e.target.value) || 0)} className="w-full text-sm" />
-              </div>
-            </>
-          ) : (
-            <>
-              <div>
-                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor={`poids-${exercice.id}`}>Poids (kg)</label>
-                <input id={`poids-${exercice.id}`} type="number" step="0.5" inputMode="decimal" value={poids} onChange={(e) => setPoids(parseFloat(e.target.value) || 0)} className="w-full text-sm" />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor={`reps-${exercice.id}`}>Reps</label>
-                <input id={`reps-${exercice.id}`} type="number" inputMode="numeric" value={reps} onChange={(e) => setReps(parseInt(e.target.value) || 0)} className="w-full text-sm" />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase text-[var(--grey)]" htmlFor={`sets-${exercice.id}`}>Séries</label>
-                <input id={`sets-${exercice.id}`} type="number" inputMode="numeric" value={sets} onChange={(e) => setSets(parseInt(e.target.value) || 0)} className="w-full text-sm" />
-              </div>
-            </>
-          )}
-          <input
-            type="text" placeholder="Note (optionnel)" value={note} onChange={(e) => setNote(e.target.value)}
-            className="col-span-3 text-sm"
-          />
-          <Button onClick={enregistrer} disabled={saving} className="col-span-3 mt-1">
-            {saving ? "Enregistrement…" : "Enregistrer la série"}
-          </Button>
-        </div>
+        <SaisieSerie
+          exerciceId={exercice.id}
+          auDuree={auDuree}
+          depart={{
+            poids: exercice.cible?.mode === "reps" ? exercice.cible.poidsCible : 0,
+            reps: exercice.cible?.mode === "reps" ? exercice.cible.repsCible : 10,
+            dureeSec: cibleDureeSec,
+          }}
+          nbSeriesSuggere={auDuree ? 1 : 3}
+          derniereSeance={exercice.derniereSeance ?? null}
+          onSerieValidee={() => setOpen(true)}
+        />
       )}
+
     </Card>
   );
 }
