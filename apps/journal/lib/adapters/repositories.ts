@@ -92,8 +92,18 @@ export const objectifsRepository = {
     valeurCible?: number | null;
     valeurActuelle?: number | null;
     sens?: "croissant" | "decroissant" | null;
+    joursParSemaine?: number | null;
   }) {
     const [row] = await db.insert(objectifs).values(input).returning();
+    return row;
+  },
+  /** Rythme visé : le dénominateur de la cohérence hebdomadaire. */
+  async setJoursParSemaine(id: string, jours: number | null) {
+    const [row] = await db
+      .update(objectifs)
+      .set({ joursParSemaine: jours })
+      .where(eq(objectifs.id, id))
+      .returning();
     return row;
   },
   async ajouterMinutes(id: string, minutes: number) {
@@ -112,6 +122,53 @@ export const objectifsRepository = {
   },
   async delete(id: string) {
     await db.delete(objectifs).where(eq(objectifs.id, id));
+  },
+};
+
+/**
+ * Traces datées d'avancement, pour la cohérence hebdomadaire.
+ *
+ * Deux sources, parce que l'app a deux façons de faire avancer un objectif :
+ *   - une tâche cochée qui lui est rattachée ;
+ *   - une validation de la discipline à laquelle il est rattaché.
+ *
+ * Limite assumée : `taches` ne garde pas la date de la coche, seulement celle
+ * à laquelle la tâche était posée. Une tâche de lundi cochée le jeudi compte
+ * donc pour lundi. Corriger ça demanderait une colonne `fait_le` ; en
+ * attendant, c'est la date qui fait foi et c'est dit ici plutôt que caché.
+ */
+export const tracesRepository = {
+  async entreDates(dateDebut: string, dateFin: string) {
+    const [tachesFaites, validations, objs] = await Promise.all([
+      db
+        .select({ objectifId: taches.objectifId, date: taches.date })
+        .from(taches)
+        .where(and(eq(taches.fait, true), gte(taches.date, dateDebut), lte(taches.date, dateFin))),
+      db
+        .select({ disciplineId: joursValides.disciplineId, date: joursValides.date })
+        .from(joursValides)
+        .where(and(gte(joursValides.date, dateDebut), lte(joursValides.date, dateFin))),
+      db.select({ id: objectifs.id, disciplineId: objectifs.disciplineId }).from(objectifs),
+    ]);
+
+    const out: Array<{ objectifId: string; date: string }> = [];
+    for (const t of tachesFaites) {
+      if (t.objectifId) out.push({ objectifId: t.objectifId, date: t.date });
+    }
+
+    // Une discipline peut porter plusieurs objectifs : la valider les fait
+    // tous avancer ce jour-là.
+    const parDiscipline = new Map<string, string[]>();
+    for (const o of objs) {
+      if (!o.disciplineId) continue;
+      parDiscipline.set(o.disciplineId, [...(parDiscipline.get(o.disciplineId) ?? []), o.id]);
+    }
+    for (const v of validations) {
+      for (const id of parDiscipline.get(v.disciplineId) ?? []) {
+        out.push({ objectifId: id, date: v.date });
+      }
+    }
+    return out;
   },
 };
 
