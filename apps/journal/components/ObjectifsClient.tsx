@@ -9,6 +9,131 @@ import { IconTarget, IconPlus, IconClock, IconX } from "./icons";
 type TypeObjectif = "temps" | "metrique";
 type Sens = "croissant" | "decroissant";
 
+const LETTRES = ["L", "M", "M", "J", "V", "S", "D"];
+
+/**
+ * L'indice visuel de la semaine : un cercle dont la couleur va du rouge au
+ * vert. Il ne tient compte que des objectifs qui déclarent un rythme — ceux
+ * qui n'en ont pas sont ignorés, pas comptés à zéro, sinon l'indice
+ * annoncerait un échec là où il n'y a simplement rien de mesuré.
+ *
+ * Il se calcule entièrement à la lecture. Aucun score n'est stocké : c'est ce
+ * qui permet de corriger une journée passée sans corrompre l'indice.
+ */
+function IndiceProductivite({ valeur }: { valeur: number }) {
+  const palier =
+    valeur < 40 ? "faible" : valeur < 70 ? "moyen" : valeur < 85 ? "bon" : "excellent";
+  const legende = {
+    faible: "la semaine décroche",
+    moyen: "le rythme tient à peu près",
+    bon: "bonne semaine",
+    excellent: "rythme tenu",
+  }[palier];
+
+  return (
+    <div className={`indice ${palier}`} title={legende}>
+      <span className="indice-cercle" aria-hidden="true">
+        <span className="indice-valeur">{valeur}</span>
+      </span>
+      <span className="indice-texte">
+        <strong>Indice de la semaine</strong>
+        {legende}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * La semaine de l'objectif : une pastille par jour, pleine quand l'objectif a
+ * avancé ce jour-là, et le rapport au rythme visé.
+ *
+ * Sans rythme déclaré, on n'affiche pas de pourcentage — on propose de le
+ * fixer. Un pourcentage sans dénominateur ne mesurerait rien.
+ */
+function CoherenceSemaine({
+  objectif,
+  semaine,
+  today,
+  onRythme,
+}: {
+  objectif: Objectif;
+  semaine: string[];
+  today: string;
+  onRythme: (jours: number | null) => void;
+}) {
+  const faits = new Set(objectif.joursTravailles);
+  const palier =
+    objectif.coherence == null
+      ? ""
+      : objectif.coherence < 40
+        ? "faible"
+        : objectif.coherence < 70
+          ? "moyen"
+          : objectif.coherence < 85
+            ? "bon"
+            : "excellent";
+
+  return (
+    <div className="coh">
+      <div className="coh-haut">
+        <span className="coh-titre">Cohérence semaine</span>
+        {objectif.coherence == null ? (
+          <span className="coh-absente">rythme non fixé</span>
+        ) : (
+          <span className={`coh-valeur ${palier}`}>
+            {objectif.coherence}%
+            <span className="coh-detail">
+              {objectif.joursFaits}/{objectif.joursParSemaine} j
+            </span>
+          </span>
+        )}
+      </div>
+
+      <ol className="coh-jours" aria-label="Jours travaillés cette semaine">
+        {semaine.map((d, i) => (
+          <li
+            key={d}
+            className={[
+              faits.has(d) ? "ok" : "",
+              d === today ? "today" : "",
+              d > today ? "futur" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <span aria-hidden="true">{LETTRES[i]}</span>
+            <span className="sr-only">{faits.has(d) ? "travaillé" : "non travaillé"}</span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="coh-bas">
+        {objectif.alerte === "neglige" && (
+          <span className="tag amber">pas encore touché cette semaine</span>
+        )}
+        {objectif.alerte === "hors-rythme" && (
+          <span className="tag rose">rythme hors d&apos;atteinte cette semaine</span>
+        )}
+        <label className="coh-rythme">
+          Viser
+          <select
+            value={objectif.joursParSemaine ?? ""}
+            onChange={(e) => onRythme(e.target.value ? Number(e.target.value) : null)}
+            aria-label={`Rythme visé pour ${objectif.nom}`}
+          >
+            <option value="">—</option>
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <option key={n} value={n}>
+                {n} j/sem
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </div>
+  );
+}
+
 type Objectif = {
   id: string;
   nom: string;
@@ -21,13 +146,32 @@ type Objectif = {
   valeurActuelle: number | null;
   progression: number;
   unite: string;
+  /** Rythme visé, dénominateur de la cohérence. Null = pas de rythme fixé. */
+  joursParSemaine: number | null;
+  /** 0..100, ou null sans rythme visé. */
+  coherence: number | null;
+  joursFaits: number;
+  joursTravailles: string[];
+  alerte: "neglige" | "hors-rythme" | null;
 };
 
-export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs: Objectif[] }) {
+export default function ObjectifsClient({
+  initialObjectifs,
+  indice,
+  semaine,
+  today,
+}: {
+  initialObjectifs: Objectif[];
+  /** Indice de productivité de la semaine, null si aucun objectif n'a de rythme. */
+  indice: number | null;
+  semaine: string[];
+  today: string;
+}) {
   const router = useRouter();
   const [type, setType] = useState<TypeObjectif>("temps");
   const [nom, setNom] = useState("");
   const [heures, setHeures] = useState(20);
+  const [rythme, setRythme] = useState("");
   const [uniteLibre, setUniteLibre] = useState("");
   const [valeurDepart, setValeurDepart] = useState(0);
   const [valeurCible, setValeurCible] = useState(100);
@@ -51,13 +195,15 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
     await fetch("/api/objectifs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        type === "temps"
+      body: JSON.stringify({
+        ...(type === "temps"
           ? { nom, disciplineId: null, heuresCible: heures, deadline: deadline || null, type }
-          : { nom, disciplineId: null, deadline: deadline || null, type, unite: uniteLibre, valeurDepart, valeurCible, sens }
-      ),
+          : { nom, disciplineId: null, deadline: deadline || null, type, unite: uniteLibre, valeurDepart, valeurCible, sens }),
+        joursParSemaine: rythme ? Number(rythme) : null,
+      }),
     });
     setNom("");
+    setRythme("");
     setHeures(20);
     setUniteLibre("");
     setValeurDepart(0);
@@ -100,6 +246,16 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
     router.refresh();
   }
 
+  async function changerRythme(id: string, jours: number | null) {
+    await fetch(`/api/objectifs/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ joursParSemaine: jours }),
+    });
+    showToast(jours ? `Rythme : ${jours} jour${jours > 1 ? "s" : ""} par semaine` : "Rythme retiré");
+    router.refresh();
+  }
+
   return (
     <div className="grid g-main">
       <section className="panel panel-pad-lg spot">
@@ -115,6 +271,11 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
                 : `${initialObjectifs.length} objectif${initialObjectifs.length > 1 ? "s" : ""} suivi${initialObjectifs.length > 1 ? "s" : ""}`}
             </p>
           </div>
+          {indice != null && (
+            <div className="ph-right">
+              <IndiceProductivite valeur={indice} />
+            </div>
+          )}
         </div>
 
         {initialObjectifs.length === 0 ? (
@@ -158,6 +319,13 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
                     <strong>{o.unite}</strong>
                   </span>
                 </div>
+
+                <CoherenceSemaine
+                  objectif={o}
+                  semaine={semaine}
+                  today={today}
+                  onRythme={(v) => changerRythme(o.id, v)}
+                />
 
                 <div className="obj-actions">
                   {o.type === "temps" ? (
@@ -312,6 +480,24 @@ export default function ObjectifsClient({ initialObjectifs }: { initialObjectifs
             </div>
           </>
         )}
+
+        {/* Le rythme vaut pour les deux types d'objectif : c'est lui qui rend
+            la cohérence hebdomadaire calculable. Facultatif — un objectif
+            sans rythme reste un objectif, il n'affiche simplement pas la
+            métrique. */}
+        <div className="row">
+          <div className="field">
+            <label htmlFor="o-rythme">Rythme visé</label>
+            <select id="o-rythme" value={rythme} onChange={(e) => setRythme(e.target.value)}>
+              <option value="">— pas de rythme fixé —</option>
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                <option key={n} value={n}>
+                  {n} jour{n > 1 ? "s" : ""} par semaine
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         <button className="btn-primary" onClick={creer} disabled={saving}>
           <IconPlus style={{ width: 15, height: 15 }} />
