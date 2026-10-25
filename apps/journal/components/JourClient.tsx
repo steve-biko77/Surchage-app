@@ -36,6 +36,7 @@ export default function JourClient({
   taches,
   objectifs,
   noteInitiale,
+  avecNote = true,
 }: {
   date: string;
   today: string;
@@ -44,6 +45,12 @@ export default function JourClient({
   taches: Tache[];
   objectifs: ObjectifOption[];
   noteInitiale: string;
+  /**
+   * Faux quand le widget d'accueil porte deja la note du jour. Les deux
+   * champs ecrivent la meme ligne de `notes_jour` : les afficher ensemble
+   * ferait diverger les deux etats locaux jusqu'au prochain rechargement.
+   */
+  avecNote?: boolean;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"checklist" | "planning">("checklist");
@@ -325,24 +332,26 @@ export default function JourClient({
             </div>
           </section>
 
-          <section className="panel spot">
-            <div className="panel-head">
-              <div className="chip violet">
-                <IconPen />
+          {avecNote && (
+            <section className="panel spot">
+              <div className="panel-head">
+                <div className="chip violet">
+                  <IconPen />
+                </div>
+                <div className="ph-text">
+                  <h2>Note du jour</h2>
+                  <p>{noteSaved ? "Enregistrée automatiquement" : "Enregistrement…"}</p>
+                </div>
               </div>
-              <div className="ph-text">
-                <h2>Note du jour</h2>
-                <p>{noteSaved ? "Enregistrée automatiquement" : "Enregistrement…"}</p>
-              </div>
-            </div>
-            <textarea
-              placeholder="Comment s'est passée cette journée ?"
-              rows={4}
-              value={note}
-              onChange={(e) => onNoteChange(e.target.value)}
-              onBlur={onNoteBlur}
-            />
-          </section>
+              <textarea
+                placeholder="Comment s'est passée cette journée ?"
+                rows={4}
+                value={note}
+                onChange={(e) => onNoteChange(e.target.value)}
+                onBlur={onNoteBlur}
+              />
+            </section>
+          )}
 
           <section className="panel spot">
             <div className="panel-head">
