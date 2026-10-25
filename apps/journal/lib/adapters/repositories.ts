@@ -63,6 +63,26 @@ export const joursValidesRepository = {
     await nudgeStateRepository.enregistrerAction();
     return true;
   },
+  /**
+   * Dates distinctes ou AU MOINS UNE discipline a ete validee, depuis `dateDebut`.
+   * C'est la definition de "jour tenu" pour la serie affichee sur l'accueil :
+   * cocher une tache ne compte pas, sinon la serie ne vaudrait plus rien.
+   */
+  async datesValideesDepuis(dateDebut: string) {
+    const rows = await db
+      .select({ date: joursValides.date })
+      .from(joursValides)
+      .where(gte(joursValides.date, dateDebut));
+    return [...new Set(rows.map((r) => r.date))];
+  },
+  /** Identifiants des disciplines validees a cette date. */
+  async disciplinesValideesLe(date: string) {
+    const rows = await db
+      .select({ disciplineId: joursValides.disciplineId })
+      .from(joursValides)
+      .where(eq(joursValides.date, date));
+    return rows.map((r) => r.disciplineId);
+  },
   /** Toutes les validations avec note, tous jours confondus (pour la page /journal). */
   async avecNotes() {
     return db
