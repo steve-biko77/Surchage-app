@@ -38,6 +38,7 @@ export default function MuscleSilhouette({ groupe, nom }: { groupe: string; nom?
       fenetreSur(VIEWBOX[vue], boiteDeRegions(vue, cibles), {
         marge: 0.3,
         zoomMax: 2.9,
+        zoomMin: 1.9,
         ratio: RATIO_VIGNETTE,
       });
 
@@ -68,6 +69,7 @@ export default function MuscleSilhouette({ groupe, nom }: { groupe: string; nom?
           fenetre: fenetreSur(VIEWBOX[vue], boite, {
             marge: 0.3,
             zoomMax: 2.9,
+            zoomMin: 1.9,
             ratio: RATIO_VIGNETTE,
           }),
         };
