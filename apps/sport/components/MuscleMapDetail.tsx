@@ -60,6 +60,9 @@ export default function MuscleMapDetail({
       f[vue] = fenetreSur(VIEWBOX[vue], boite, {
         marge: 0.42,
         zoomMax: 2.2,
+        // Plancher : une vue qui ne porte que des secondaires eparpilles
+        // restait a x1,4 et paraissait non zoomee a cote de l'autre.
+        zoomMin: 1.85,
         ratio: RATIO_FICHE,
       });
     }

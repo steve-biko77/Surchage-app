@@ -31,11 +31,11 @@ export type { Boite, Fenetre, Vue } from "@/lib/anatomie/trace";
 export function fenetreSur(
   complete: Fenetre,
   boite: Boite | null,
-  options: { marge?: number; zoomMax?: number; ratio?: number } = {}
+  options: { marge?: number; zoomMax?: number; zoomMin?: number; ratio?: number } = {}
 ): Fenetre {
   const [vx, vy, vw, vh] = complete;
   if (!boite || boite.w <= 0 || boite.h <= 0) return complete;
-  const { marge = 0.35, zoomMax = 3.2, ratio = vw / vh } = options;
+  const { marge = 0.35, zoomMax = 3.2, zoomMin = 1, ratio = vw / vh } = options;
 
   let w = boite.w * (1 + marge * 2);
   let h = boite.h * (1 + marge * 2);
@@ -62,6 +62,18 @@ export function fenetreSur(
   if (debord > 1) {
     w /= debord;
     h /= debord;
+  }
+
+  // Plancher d'approche. Quand les muscles allumés sont éparpillés — le haut
+  // du corps vu de face sur des tractions, du trapèze aux avant-bras — leur
+  // boîte couvre presque tout et il ne reste aucun zoom. On resserre alors
+  // jusqu'à ce plancher, quitte à rogner les extrémités (tête, mains) : un
+  // corps entier minuscule n'apprend rien, un cadrage serré oui.
+  const zoom = vh / h;
+  if (zoom < zoomMin) {
+    const f = zoom / zoomMin;
+    w *= f;
+    h *= f;
   }
 
   let x = boite.x + boite.w / 2 - w / 2;
