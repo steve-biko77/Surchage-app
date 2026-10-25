@@ -81,27 +81,50 @@ export default function PushOptIn() {
   const activer = useCallback(async () => {
     setOccupe(true);
     setMessage(null);
+    // Chaque etape rapporte son propre echec. Un catch unique affichait
+    // "Impossible d'activer" sans dire laquelle avait lache, ce qui rendait
+    // tout diagnostic a distance impossible.
+    let etape = "demarrage";
     try {
+      etape = "autorisation";
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setEtat(permission === "denied" ? "refuse" : "inactif");
+        if (permission === "default") {
+          setMessage("Autorisation non accordee — reessaie et choisis « Autoriser ».");
+        }
         return;
       }
 
+      etape = "cle serveur";
       const rep = await fetch("/api/push/cle");
       if (!rep.ok) {
-        setMessage("Les notifications ne sont pas encore configurées côté serveur.");
+        setMessage(`Cle serveur indisponible (HTTP ${rep.status}).`);
         return;
       }
       const { cle } = await rep.json();
+      if (typeof cle !== "string" || cle.length < 80) {
+        setMessage("La cle publique recue par le serveur est invalide.");
+        return;
+      }
 
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
+      etape = "service worker";
+      await navigator.serviceWorker.register("/sw.js");
+      // On prend l'enregistrement ACTIF : celui que `register` renvoie peut
+      // etre encore en cours d'installation, et son pushManager echoue alors.
+      const reg = await navigator.serviceWorker.ready;
+
+      etape = "abonnement";
+      // Un abonnement residuel cree avec une autre cle VAPID fait echouer
+      // `subscribe` avec InvalidStateError : on le retire d'abord.
+      const existant = await reg.pushManager.getSubscription();
+      if (existant) await existant.unsubscribe().catch(() => {});
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: cleVersOctets(cle) as BufferSource,
       });
 
+      etape = "enregistrement";
       const brut = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
       const enreg = await fetch("/api/push/subscribe", {
         method: "POST",
@@ -109,13 +132,18 @@ export default function PushOptIn() {
         body: JSON.stringify({ ...brut, libelle: libelleAppareil() }),
       });
       if (!enreg.ok) {
-        setMessage("L'abonnement n'a pas pu être enregistré.");
+        const detail = await enreg.text().catch(() => "");
+        setMessage(`Enregistrement refuse (HTTP ${enreg.status}). ${detail.slice(0, 140)}`);
         return;
       }
+
       setEtat("actif");
-      setMessage("Notifications activées sur cet appareil.");
-    } catch {
-      setMessage("Impossible d'activer les notifications sur cet appareil.");
+      setMessage("Notifications activees sur cet appareil.");
+    } catch (e) {
+      const err = e as { name?: string; message?: string };
+      setMessage(
+        `Echec a l'etape « ${etape} » : ${err.name || "Erreur"} — ${err.message || "sans detail"}`
+      );
     } finally {
       setOccupe(false);
     }
