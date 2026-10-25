@@ -51,6 +51,16 @@ export type CorpsSvgProps = {
   interactif?: boolean;
   rendreAttributs?: (region: { id: string; base: BaseRegion }) => React.SVGProps<SVGPathElement>;
   titre?: string;
+  /**
+   * Fenêtre affichée, en coordonnées du tracé. Par défaut le corps entier.
+   * La passer réduite revient à approcher la zone, comme on amène une carte
+   * du monde sur un pays : même tracé, même échelle, on cadre seulement.
+   */
+  fenetre?: [number, number, number, number];
+  /** Occupe toute la boîte parente au lieu de se dimensionner sur sa hauteur. */
+  remplir?: boolean;
+  /** Accès direct au `<svg>`, pour animer la fenêtre sans repasser par React. */
+  svgRef?: React.Ref<SVGSVGElement>;
 };
 
 export default function CorpsSvg({
@@ -64,15 +74,27 @@ export default function CorpsSvg({
   interactif = false,
   rendreAttributs,
   titre,
+  fenetre,
+  remplir = false,
+  svgRef,
 }: CorpsSvgProps) {
+  // La lumière reste calée sur le corps entier, pas sur la fenêtre : recadrer
+  // ne doit pas déplacer la source lumineuse.
   const [vx, vy, vw, vh] = VIEWBOX[vue];
+  const cadre = fenetre ?? VIEWBOX[vue];
   const liste = REGIONS[vue];
   const gid = `${uid}-${vue}`;
 
   return (
     <svg
-      viewBox={VIEWBOX[vue].join(" ")}
-      style={{ height: hauteur, width: "auto", overflow: "visible" }}
+      ref={svgRef}
+      viewBox={cadre.join(" ")}
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        remplir
+          ? { width: "100%", height: "100%", overflow: "hidden" }
+          : { height: hauteur, width: "auto", overflow: "visible" }
+      }
       role="img"
       aria-label={titre ?? `Carte musculaire, vue ${vue === "face" ? "de face" : "de dos"}`}
     >
