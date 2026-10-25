@@ -49,10 +49,32 @@ function libelleAppareil(): string {
   return "Appareil";
 }
 
+/**
+ * Declare l'abonnement au serveur. Idempotent : l'endpoint est unique en base,
+ * un renvoi met simplement la ligne a jour. Retourne le nombre d'appareils
+ * reellement enregistres, ou null si le serveur n'a pas pris.
+ */
+async function declarerAuServeur(sub: PushSubscription): Promise<number | null> {
+  const brut = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+  try {
+    const r = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...brut, libelle: libelleAppareil() }),
+    });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => ({}));
+    return typeof j.total === "number" ? j.total : 1;
+  } catch {
+    return null;
+  }
+}
+
 export default function PushOptIn() {
   const [etat, setEtat] = useState<Etat>("chargement");
   const [occupe, setOccupe] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [appareils, setAppareils] = useState<number | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -71,10 +93,28 @@ export default function PushOptIn() {
       return;
     }
 
+    // Un abonnement present dans le navigateur ne prouve PAS que le serveur
+    // le connait : une tentative precedente a pu s'abonner a FCM puis echouer
+    // a l'enregistrer. On le redeclare donc a chaque chargement, et c'est la
+    // reponse du serveur qui decide de l'etat affiche.
     navigator.serviceWorker
       .register("/sw.js")
+      .then(() => navigator.serviceWorker.ready)
       .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setEtat(sub ? "actif" : "inactif"))
+      .then(async (sub) => {
+        if (!sub) {
+          setEtat("inactif");
+          return;
+        }
+        const total = await declarerAuServeur(sub);
+        if (total == null) {
+          setEtat("inactif");
+          setMessage("Cet appareil n'est pas enregistre cote serveur — appuie sur Activer.");
+          return;
+        }
+        setAppareils(total);
+        setEtat("actif");
+      })
       .catch(() => setEtat("non-supporte"));
   }, []);
 
@@ -134,18 +174,13 @@ export default function PushOptIn() {
       });
 
       etape = "enregistrement";
-      const brut = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
-      const enreg = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...brut, libelle: libelleAppareil() }),
-      });
-      if (!enreg.ok) {
-        const detail = await enreg.text().catch(() => "");
-        setMessage(`Enregistrement refuse (HTTP ${enreg.status}). ${detail.slice(0, 140)}`);
+      const total = await declarerAuServeur(sub);
+      if (total == null) {
+        setMessage("Le serveur n'a pas enregistre cet appareil. Reessaie.");
         return;
       }
 
+      setAppareils(total);
       setEtat("actif");
       setMessage("Notifications activees sur cet appareil.");
     } catch (e) {
@@ -185,6 +220,7 @@ export default function PushOptIn() {
     try {
       const r = await fetch("/api/push/test", { method: "POST" });
       const j = await r.json().catch(() => ({}));
+      if (r.ok && typeof j.envoyes === "number") setAppareils(j.envoyes);
       setMessage(
         r.ok
           ? `Envoyé à ${j.envoyes} appareil${j.envoyes > 1 ? "s" : ""}.`
@@ -235,7 +271,12 @@ export default function PushOptIn() {
           <strong>
             <Check className="inline-icone" aria-hidden="true" /> Notifications activées
           </strong>
-          {message && <p>{message}</p>}
+          <p>
+            {appareils != null
+              ? `${appareils} appareil${appareils > 1 ? "s" : ""} enregistré${appareils > 1 ? "s" : ""} côté serveur.`
+              : "Appareil enregistré."}
+            {message ? ` ${message}` : ""}
+          </p>
         </div>
         <div className="push-actions">
           <button type="button" onClick={tester} disabled={occupe}>

@@ -23,7 +23,10 @@ export async function POST(req: Request) {
     libelle: typeof body?.libelle === "string" ? body.libelle.slice(0, 80) : null,
   });
 
-  return NextResponse.json({ ok: true, id: row.id }, { status: 201 });
+  // Le total permet a l'interface d'afficher combien d'appareils sont
+  // REELLEMENT enregistres, et non ce que le navigateur local croit.
+  const total = (await pushSubscriptionsRepository.all()).length;
+  return NextResponse.json({ ok: true, id: row.id, total }, { status: 201 });
 }
 
 /** Desabonne un appareil. */
