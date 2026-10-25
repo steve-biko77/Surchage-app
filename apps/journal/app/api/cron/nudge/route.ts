@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { autoriseAppelInterne } from "@/lib/nudge/auth";
-import { tachesRepository, joursValidesRepository, nudgeStateRepository, journalCalendarRepository, pushSubscriptionsRepository } from "@/lib/adapters/repositories";
+import { tachesRepository, joursValidesRepository, nudgeStateRepository, journalCalendarRepository, pushSubscriptionsRepository, objectifsRepository, tracesRepository } from "@/lib/adapters/repositories";
 import { envoyerPush } from "@/lib/nudge/push";
+import { alerteObjectif, coherenceParObjectif, semaineDe } from "@/lib/domain/coherence";
 import { todayISO, heureLocaleParis } from "@/lib/domain/services";
 import { materialiserTachesRecurrentes } from "@/lib/domain/recurrence";
 import { creerEvenementRappel } from "@/lib/google/calendar";
@@ -96,5 +97,40 @@ export async function POST(req: Request) {
     return envoyer(pickVariant(MESSAGES_RAPPEL_STANDARD, etat.lastMessage));
   }
 
+  // Rappel hebdomadaire : un objectif qui n'a pas bouge de la semaine.
+  //
+  // Il ne passe qu'une fois, a 18h, et seulement quand la journee est deja
+  // engagee -- sinon il viendrait s'empiler sur le rappel du jour. Une seule
+  // heure, parce que l'anti-doublon ne couvre que 50 minutes et qu'un rappel
+  // repete trois apres-midi d'affilee est un rappel qu'on apprend a ignorer.
+  if (heure === 18) {
+    const message = await rappelObjectifNeglige(today);
+    if (message) return envoyer(message);
+  }
+
   return NextResponse.json({ envoye: false, raison: "engagement deja amorce aujourd'hui" });
+}
+
+/**
+ * Message pour les objectifs restes a l'arret cette semaine, ou null s'il n'y
+ * a rien a signaler. Les objectifs sans rythme vise sont ignores : sans
+ * denominateur, "neglige" ne veut rien dire.
+ */
+async function rappelObjectifNeglige(today: string): Promise<string | null> {
+  const semaine = semaineDe(today);
+  const [rows, traces] = await Promise.all([
+    objectifsRepository.all(),
+    tracesRepository.entreDates(semaine[0], semaine[6]),
+  ]);
+
+  const coherences = coherenceParObjectif(
+    rows.map((r) => ({ id: r.id, joursParSemaine: r.joursParSemaine })),
+    traces,
+    semaine
+  );
+
+  const negliges = rows.filter((r) => alerteObjectif(coherences.get(r.id)!, today) === "neglige");
+  if (negliges.length === 0) return null;
+  if (negliges.length === 1) return `« ${negliges[0].nom} » n'a pas bouge de la semaine.`;
+  return `${negliges.length} objectifs n'ont pas bouge de la semaine.`;
 }
