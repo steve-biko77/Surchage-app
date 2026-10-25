@@ -94,16 +94,22 @@ export default function MuscleMapDetail({
         </div>
       </CardHeader>
 
-      <div className="flex items-center justify-center gap-5 px-2 py-4">
+      <div className="flex items-start justify-center gap-4 px-3 py-4">
         {vues.map((v) => (
-          <div key={v} className="flex flex-col items-center">
+          <div key={v} className="flex min-w-0 flex-1 flex-col items-center" style={{ maxWidth: `calc(var(--fiche-corps-h, 190px) * ${RATIO_FICHE})` }}>
             {/* Pas de `surlignes` ici : il repeint toutes les portions dans la
                 même teinte de surlignage et écrase la distinction primaire /
                 secondaire. Ce sont les paliers (4 vs 2) qui la portent. */}
+            {/* La boîte se partage la largeur de la carte plutôt que de la
+                déduire de sa hauteur : avec deux vues côte à côte et des
+                proportions moins élancées que le corps, une largeur fixe
+                débordait de la carte. La hauteur suit par le ratio. */}
             <div
               style={{
-                height: "var(--fiche-corps-h, 190px)",
-                width: `calc(var(--fiche-corps-h, 190px) * ${RATIO_FICHE})`,
+                flex: "1 1 0",
+                minWidth: 0,
+                maxWidth: `calc(var(--fiche-corps-h, 190px) * ${RATIO_FICHE})`,
+                aspectRatio: String(RATIO_FICHE),
               }}
             >
               <CorpsZoom
