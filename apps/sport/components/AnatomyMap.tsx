@@ -6,6 +6,7 @@
 
 import { useCallback, useId, useMemo, useState } from "react";
 import CorpsSvg, { VIEWBOX, type Vue } from "./anatomie/CorpsSvg";
+import { boiteDeRegions } from "@/lib/anatomie/trace";
 import {
   REGION_LABELS,
   REGION_VERS_GROUPE,
@@ -47,17 +48,20 @@ export default function AnatomyMap({
   }, [groupeActif, survol]);
 
   const survoler = useCallback(
-    (e: React.MouseEvent<SVGPathElement> | React.FocusEvent<SVGPathElement>, v: Vue) => {
-      const el = e.currentTarget;
-      const base = baseDeRegion(el.dataset.region ?? "");
+    (base: BaseRegion, v: Vue) => {
       if (!base || !REGION_LABELS[base]) return;
-      const bb = el.getBBox();
+      // Les bornes viennent du tracé, pas d'un `getBBox()` sur le chemin
+      // survolé : chaque forme porte son propre `transform`, donc sa boîte
+      // mesurée est dans un repère local et placerait la bulle n'importe où.
+      // Et ce sont les bornes du MUSCLE entier, pas d'une de ses portions.
+      const boite = boiteDeRegions(v, [base]);
+      if (!boite) return;
       const [vx, vy, vw, vh] = VIEWBOX[v];
       setSurvol(base);
       setBulle({
         // En % du viewBox : l'infobulle suit le muscle à toute taille.
-        x: ((bb.x + bb.width / 2 - vx) / vw) * 100,
-        y: ((bb.y - vy) / vh) * 100,
+        x: ((boite.x + boite.w / 2 - vx) / vw) * 100,
+        y: ((boite.y - vy) / vh) * 100,
         titre: REGION_LABELS[base],
         sous: LIBELLES_NIVEAU[intensites[base] ?? 0],
       });
@@ -85,8 +89,8 @@ export default function AnatomyMap({
       tabIndex: 0,
       role: "button",
       "aria-label": `${REGION_LABELS[base]} — ${LIBELLES_NIVEAU[niveau]}. Groupe ${GROUPE_LABELS[groupe] ?? ""}`,
-      onMouseEnter: (e: React.MouseEvent<SVGPathElement>) => survoler(e, v),
-      onFocus: (e: React.FocusEvent<SVGPathElement>) => survoler(e, v),
+      onMouseEnter: () => survoler(base, v),
+      onFocus: () => survoler(base, v),
       onBlur: quitter,
       onClick: () => choisir(base),
       onKeyDown: (e: React.KeyboardEvent<SVGPathElement>) => {
