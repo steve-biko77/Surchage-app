@@ -353,6 +353,7 @@ h1, h2, h3, h4 { font-family: var(--font-display), var(--font-sans), sans-serif;
 .tag.brand { background: var(--brand-wash); color: var(--brand-deep); }
 .tag.amber { background: var(--amber-wash); color: #b5701a; }
 .tag.teal { background: var(--teal-wash); color: #0a8a74; }
+.tag.rose { background: var(--rose-wash); color: #c23a50; }
 .task .heure {
   font-size: 11.5px; font-weight: 650; color: var(--ink-2);
   background: var(--surface-3); padding: 3px 8px; border-radius: 6px; white-space: nowrap;
@@ -814,4 +815,73 @@ button.btn-primary:disabled { opacity: 0.55; cursor: default; }
   .push-bloc { flex-wrap: wrap; }
   .push-actions { width: 100%; }
   .push-actions button { flex: 1; justify-content: center; }
+}
+
+/* ═════════════════ Cohérence hebdomadaire ═════════════════
+   Le rythme visé donne enfin un dénominateur au « 81% ». Tout est
+   recalculé à la lecture : aucun score n'est stocké, pour qu'une
+   correction rétroactive corrige aussi la mesure. */
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.coh { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
+.coh-haut { display: flex; align-items: baseline; gap: 8px; }
+.coh-titre { font-size: 11px; font-weight: 600; color: var(--ink-3); }
+.coh-absente { margin-left: auto; font-size: 11px; color: var(--ink-4); font-style: italic; }
+.coh-valeur {
+  margin-left: auto; font-size: 15px; font-weight: 800; letter-spacing: -0.02em;
+  display: inline-flex; align-items: baseline; gap: 6px;
+}
+.coh-valeur.faible { color: var(--rose); }
+.coh-valeur.moyen { color: var(--amber); }
+.coh-valeur.bon { color: var(--brand); }
+.coh-valeur.excellent { color: var(--teal); }
+.coh-detail { font-size: 10.5px; font-weight: 600; color: var(--ink-4); }
+
+.coh-jours { display: flex; gap: 4px; list-style: none; margin: 9px 0 0; padding: 0; }
+.coh-jours li {
+  flex: 1; height: 22px; border-radius: 6px; display: grid; place-items: center;
+  font-size: 10px; font-weight: 700; color: var(--ink-4);
+  background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--line);
+}
+.coh-jours li.ok { background: var(--brand); color: #fff; box-shadow: none; }
+.coh-jours li.today { box-shadow: inset 0 0 0 1.5px var(--brand-2); }
+.coh-jours li.futur { opacity: 0.45; }
+
+.coh-bas { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+.coh-rythme {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--ink-3);
+}
+.coh-rythme select {
+  font: inherit; font-size: 11px; padding: 3px 6px; border-radius: 7px;
+  border: 0; box-shadow: inset 0 0 0 1px var(--line-2);
+  background: var(--surface); color: var(--ink); cursor: pointer;
+}
+
+/* ── Indice visuel de la semaine ── */
+
+.indice { display: flex; align-items: center; gap: 10px; }
+.indice-cercle {
+  position: relative; width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center; flex: none;
+  background: var(--i-fond);
+  box-shadow: inset 0 0 0 2px var(--i-trait), 0 0 0 4px var(--i-halo);
+}
+.indice-valeur { font-size: 14px; font-weight: 800; letter-spacing: -0.03em; color: var(--i-trait); }
+.indice-texte { display: flex; flex-direction: column; font-size: 11px; color: var(--ink-3); line-height: 1.35; }
+.indice-texte strong { font-size: 11.5px; font-weight: 700; color: var(--ink-2); }
+
+/* Rouge -> jaune -> vert, comme prévu : le halo porte la couleur, pas un
+   simple texte coloré, pour que l'état se lise sans être lu. */
+.indice.faible { --i-fond: var(--rose-wash); --i-trait: var(--rose); --i-halo: rgba(222, 81, 104, 0.14); }
+.indice.moyen { --i-fond: var(--amber-wash); --i-trait: var(--amber); --i-halo: rgba(226, 145, 44, 0.16); }
+.indice.bon { --i-fond: var(--brand-wash); --i-trait: var(--brand); --i-halo: rgba(29, 127, 224, 0.16); }
+.indice.excellent { --i-fond: var(--teal-wash); --i-trait: var(--teal); --i-halo: rgba(14, 169, 143, 0.18); }
+
+@media (max-width: 560px) {
+  .indice-texte { display: none; }
 }

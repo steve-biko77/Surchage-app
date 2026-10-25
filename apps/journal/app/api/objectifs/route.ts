@@ -9,10 +9,19 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const { nom, type, disciplineId, deadline, heuresCible, unite, valeurDepart, valeurCible, sens } = await req.json();
+  const { nom, type, disciplineId, deadline, heuresCible, unite, valeurDepart, valeurCible, sens, joursParSemaine } =
+    await req.json();
 
   if (!nom) {
     return NextResponse.json({ error: "nom est requis" }, { status: 400 });
+  }
+  // Rythme vise : facultatif, mais s'il est la il doit tenir dans une semaine.
+  const rythme =
+    joursParSemaine == null || joursParSemaine === ""
+      ? null
+      : Number(joursParSemaine);
+  if (rythme != null && (!Number.isInteger(rythme) || rythme < 1 || rythme > 7)) {
+    return NextResponse.json({ error: "joursParSemaine doit etre un entier de 1 a 7" }, { status: 400 });
   }
   if (type !== "metrique" && !heuresCible) {
     return NextResponse.json({ error: "heuresCible est requis pour un objectif temps" }, { status: 400 });
@@ -39,6 +48,7 @@ export async function POST(req: Request) {
     valeurCible: estMetrique ? valeurCible : null,
     valeurActuelle: estMetrique ? depart : null,
     sens: estMetrique ? (sens === "decroissant" ? "decroissant" : "croissant") : null,
+    joursParSemaine: rythme,
   });
 
   return NextResponse.json(row, { status: 201 });

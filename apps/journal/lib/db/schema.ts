@@ -24,6 +24,14 @@ export const objectifs = pgTable("objectifs", {
   type: text("type").notNull().default("temps"), // "temps" | "metrique"
   disciplineId: uuid("discipline_id").references(() => disciplinesInstances.id),
   deadline: text("deadline"), // ISO date string, nullable
+  /**
+   * Rythme vise : nombre de jours par semaine ou l'on compte avancer sur cet
+   * objectif. C'est le DENOMINATEUR de la coherence hebdomadaire -- sans lui,
+   * "81% de coherence" ne veut rien dire, on ne sait pas 81% de quoi.
+   * Nullable : un objectif sans rythme fixe n'affiche simplement pas la
+   * metrique, plutot que d'en inventer une.
+   */
+  joursParSemaine: integer("jours_par_semaine"),
   heuresCible: real("heures_cible"),
   minutesInvesties: integer("minutes_investies").notNull().default(0),
   // Objectif "metrique" generique (Elo, pages, km, kg...) -- remplace poidsCible/meilleurPoidsAtteint.
