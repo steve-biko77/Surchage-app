@@ -116,9 +116,18 @@ export default function PushOptIn() {
 
       etape = "abonnement";
       // Un abonnement residuel cree avec une autre cle VAPID fait echouer
-      // `subscribe` avec InvalidStateError : on le retire d'abord.
+      // `subscribe` avec InvalidStateError : on le retire d'abord. On previent
+      // aussi le serveur, sinon sa ligne reste en base en orphelin et recevra
+      // des envois qui n'aboutiront jamais.
       const existant = await reg.pushManager.getSubscription();
-      if (existant) await existant.unsubscribe().catch(() => {});
+      if (existant) {
+        await fetch("/api/push/subscribe", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: existant.endpoint }),
+        }).catch(() => {});
+        await existant.unsubscribe().catch(() => {});
+      }
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: cleVersOctets(cle) as BufferSource,
