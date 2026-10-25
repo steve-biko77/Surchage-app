@@ -815,3 +815,205 @@ button.btn-primary:disabled { opacity: 0.55; cursor: default; }
   .push-actions { width: 100%; }
   .push-actions button { flex: 1; justify-content: center; }
 }
+
+/* ═══════════════════════ Widgets d'accueil ═══════════════════════
+   Deux cartes posées en haut de la journée : la série à gauche, la
+   journée à droite. Elles se lisent d'un coup d'œil et se valident au
+   doigt, sans ouvrir de page. Tout est préfixé .wdg- pour qu'aucune
+   règle de panneau existante ne vienne les repeindre. */
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.wdg-bande {
+  display: grid; gap: 14px; margin-bottom: 18px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+.wdg {
+  border-radius: 20px; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* ─────────────── Carte Série ─────────────── */
+
+.wdg-serie {
+  padding: 17px 18px 15px;
+  color: #fff;
+  background:
+    radial-gradient(120% 140% at 88% 8%, rgba(255, 255, 255, 0.22), transparent 55%),
+    linear-gradient(152deg, var(--brand) 0%, var(--brand-deep) 100%);
+  box-shadow: var(--sh-brand);
+}
+.wdg-serie-haut { display: flex; align-items: center; gap: 12px; }
+.wdg-serie-texte { min-width: 0; flex: 1; }
+
+.wdg-nombre {
+  margin: 0; line-height: 0.98;
+  font-size: clamp(30px, 7.4vw, 43px); font-weight: 800; letter-spacing: -0.042em;
+}
+.wdg-nombre span { font-weight: 650; color: rgba(255, 255, 255, 0.72); }
+
+.wdg-phrase {
+  margin: 6px 0 0; font-size: 12.5px; line-height: 1.35;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.wdg-semaine {
+  display: flex; gap: 3px; list-style: none; margin: 13px 0 0; padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.13); border-radius: 15px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+.wdg-sem-jour { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wdg-sem-lettre {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.62);
+}
+.wdg-sem-case {
+  width: 19px; height: 19px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.17);
+}
+.wdg-sem-case svg {
+  width: 12px; height: 12px; fill: none;
+  stroke: var(--brand-deep); stroke-width: 3.2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.wdg-sem-jour.ok .wdg-sem-case { background: #fff; }
+/* Aujourd'hui non tenu : un anneau ouvert, pas une pastille pleine — la
+   case reste visiblement à remplir. */
+.wdg-sem-jour.today:not(.ok) .wdg-sem-case {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+.wdg-sem-jour.today .wdg-sem-lettre { color: #fff; }
+.wdg-sem-jour.futur { opacity: 0.4; }
+
+.wdg-flamme { flex: none; height: auto; width: var(--flamme-w); align-self: center; }
+.wdg-flamme.n0 { --flamme-w: clamp(44px, 11vw, 54px); }
+.wdg-flamme.n1 { --flamme-w: clamp(50px, 13vw, 62px); }
+.wdg-flamme.n2 { --flamme-w: clamp(58px, 15vw, 72px); }
+.wdg-flamme.n3 { --flamme-w: clamp(64px, 17vw, 82px); }
+.wdg-flamme-corps { fill: url(#wdg-feu); }
+.wdg-flamme-halo { fill: #f8bd58; opacity: 0.5; }
+.wdg-flamme-coeur { fill: #fffaf0; opacity: 0.92; }
+/* Série éteinte : la flamme est un contour creux, elle n'a rien à éclairer. */
+.wdg-flamme.n0 .wdg-flamme-corps {
+  fill: rgba(255, 255, 255, 0.12);
+  stroke: rgba(255, 255, 255, 0.62); stroke-width: 1;
+}
+
+.wdg-disciplines {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 14px; padding-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.17);
+}
+.wdg-disc {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border: 0; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 650; letter-spacing: -0.005em;
+  color: rgba(255, 255, 255, 0.92); background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transition: background 0.16s, color 0.16s, transform 0.16s;
+}
+.wdg-disc:hover { background: rgba(255, 255, 255, 0.22); }
+.wdg-disc.ok {
+  background: #fff; color: var(--brand-deep); box-shadow: 0 2px 8px -3px rgba(5, 40, 80, 0.5);
+}
+.wdg-disc.busy { opacity: 0.65; }
+.wdg-disc:active { transform: scale(0.96); }
+.wdg-disc-icone { font-size: 13px; line-height: 1; }
+.wdg-disc-check {
+  width: 12px; height: 12px; fill: none; stroke: currentColor;
+  stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ─────────────── Carte Jour ─────────────── */
+
+.wdg-carte-jour {
+  background: var(--surface); box-shadow: var(--sh-2), inset 0 0 0 1px var(--line);
+}
+.wdg-cadre { flex: 1; overflow: hidden; touch-action: pan-y; }
+.wdg-piste {
+  display: flex; width: 200%; height: 100%;
+  transition: transform 0.34s cubic-bezier(0.22, 0.8, 0.26, 1);
+}
+.wdg-piste.tire { transition: none; }
+.wdg-volet {
+  width: 50%; flex: none; padding: 15px 17px 6px;
+  display: flex; flex-direction: column; min-width: 0;
+}
+
+.wdg-compte {
+  margin: 0 0 10px; font-size: 14.5px; font-weight: 800; letter-spacing: -0.015em;
+  color: #b5701a; display: flex; align-items: center; gap: 7px;
+}
+.wdg-compte.note { color: #4f51d8; }
+.wdg-compte svg { width: 14px; height: 14px; }
+.wdg-etat { margin-left: auto; font-size: 10.5px; font-weight: 600; color: var(--ink-4); }
+
+/* Les lignes se répartissent sur la hauteur disponible : sans ça, trois
+   tâches se tassent en haut et la carte paraît vide sous elles. */
+.wdg-taches {
+  list-style: none; margin: 0; padding: 0; flex: 1;
+  display: flex; flex-direction: column; justify-content: space-evenly;
+}
+.wdg-taches li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 3px 0; }
+.wdg-chk {
+  flex: none; width: 22px; height: 22px; border: 0; border-radius: 7px; cursor: pointer;
+  background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--line-2);
+  display: grid; place-items: center; padding: 0;
+  transition: background 0.16s, box-shadow 0.16s;
+}
+.wdg-chk svg {
+  width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 3.4;
+  stroke-linecap: round; stroke-linejoin: round; opacity: 0;
+  transition: opacity 0.14s;
+}
+.wdg-taches li.ok .wdg-chk { background: var(--brand); box-shadow: none; }
+.wdg-taches li.ok .wdg-chk svg { opacity: 1; }
+.wdg-tache-txt {
+  font-size: 13.5px; color: var(--ink); min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wdg-taches li.ok .wdg-tache-txt { color: var(--ink-4); text-decoration: line-through; }
+.wdg-heure {
+  margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 600; color: var(--ink-3);
+}
+.wdg-heure svg { width: 11px; height: 11px; }
+.wdg-vide {
+  margin: 0; flex: 1; display: flex; flex-direction: column; justify-content: center;
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-3);
+}
+.wdg-vide b { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink-2); }
+
+.wdg-note {
+  flex: 1; min-height: 76px; width: 100%; resize: none; border: 0; padding: 0;
+  background: transparent; outline: none; box-shadow: none;
+  font: inherit; font-size: 13.5px; line-height: 1.5; color: var(--ink);
+}
+.wdg-note::placeholder { color: var(--ink-4); }
+
+.wdg-points { display: flex; justify-content: center; gap: 6px; padding: 10px 0 13px; }
+.wdg-points button {
+  width: 6px; height: 6px; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--line-2); transition: width 0.22s, background 0.22s;
+}
+.wdg-points button.on { width: 17px; background: var(--ink-4); }
+
+.wdg-disc:focus-visible,
+.wdg-chk:focus-visible,
+.wdg-points button:focus-visible { outline: 2px solid var(--brand-2); outline-offset: 2px; }
+.wdg-serie .wdg-disc:focus-visible { outline-color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wdg-piste { transition: none; }
+  .wdg-disc, .wdg-chk, .wdg-points button { transition: none; }
+}
+
+@media (max-width: 860px) {
+  .wdg-bande { grid-template-columns: 1fr; gap: 12px; }
+}
