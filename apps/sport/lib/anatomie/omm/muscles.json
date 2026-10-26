@@ -1,0 +1,454 @@
+{
+  "schemaVersion": "1.0.0",
+  "muscles": [
+    {
+      "id": "sternocleidomastoid",
+      "name": "Sternocleidomastoid",
+      "group": "neck",
+      "anatomicalNames": [
+        "Sternocleidomastoid"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Simplified anterior neck panels; the artwork does not resolve every neck muscle or exact SCM head."
+    },
+    {
+      "id": "trapezius",
+      "name": "Trapezius",
+      "group": "upper_back",
+      "anatomicalNames": [
+        "Trapezius"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "anterior_deltoid",
+      "name": "Anterior deltoid",
+      "group": "shoulders",
+      "anatomicalNames": [
+        "Deltoid — anterior portion"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "lateral_deltoid",
+      "name": "Lateral deltoid",
+      "group": "shoulders",
+      "anatomicalNames": [
+        "Deltoid — middle / lateral portion"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "posterior_deltoid",
+      "name": "Posterior deltoid",
+      "group": "shoulders",
+      "anatomicalNames": [
+        "Deltoid — posterior portion"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "pectoralis_major",
+      "name": "Pectoralis major (chest)",
+      "group": "chest",
+      "anatomicalNames": [
+        "Pectoralis major"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "biceps_brachii",
+      "name": "Biceps brachii",
+      "group": "upper_arms",
+      "anatomicalNames": [
+        "Biceps brachii"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "brachialis",
+      "name": "Brachialis",
+      "group": "upper_arms",
+      "anatomicalNames": [
+        "Brachialis"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "serratus_anterior",
+      "name": "Serratus anterior",
+      "group": "core",
+      "anatomicalNames": [
+        "Serratus anterior"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "rectus_abdominis",
+      "name": "Rectus abdominis (abs)",
+      "group": "core",
+      "anatomicalNames": [
+        "Rectus abdominis"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Several drawn tiles represent portions of the same paired muscle; upper and lower tiles are not separate muscles."
+    },
+    {
+      "id": "external_oblique",
+      "name": "External oblique",
+      "group": "core",
+      "anatomicalNames": [
+        "External oblique"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "forearm_flexors",
+      "name": "Forearm flexors",
+      "group": "forearms",
+      "anatomicalNames": [
+        "Superficial forearm flexor compartment"
+      ],
+      "kind": "muscle_group",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "The connected stylized forearm panel does not isolate individual flexor muscles or tendons; use this group for exercise filtering."
+    },
+    {
+      "id": "tensor_fasciae_latae",
+      "name": "Tensor fasciae latae",
+      "group": "hips",
+      "anatomicalNames": [
+        "Tensor fasciae latae"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "iliopsoas",
+      "name": "Iliopsoas (hip flexors)",
+      "group": "hips",
+      "anatomicalNames": [
+        "Iliopsoas",
+        "Iliacus",
+        "Psoas major"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Front strap from the hip bone into the groin, just medial to the sartorius: the lateral floor of the femoral triangle. Iliacus and psoas major are drawn as one panel."
+    },
+    {
+      "id": "hip_adductors",
+      "name": "Hip adductors (inner thigh)",
+      "group": "adductors",
+      "anatomicalNames": [
+        "Medial thigh adductor group"
+      ],
+      "kind": "muscle_group",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Inner-thigh panels: the small front panel beside the vastus medialis and the rear ovals (adductor magnus / gracilis). The drawing cannot separate pectineus, adductor longus, gracilis and magnus, so the label stays a group."
+    },
+    {
+      "id": "sartorius",
+      "name": "Sartorius",
+      "group": "hips",
+      "anatomicalNames": [
+        "Sartorius"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "rectus_femoris",
+      "name": "Rectus femoris",
+      "group": "quadriceps",
+      "anatomicalNames": [
+        "Rectus femoris"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "vastus_lateralis",
+      "name": "Vastus lateralis",
+      "group": "quadriceps",
+      "anatomicalNames": [
+        "Vastus lateralis"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "vastus_medialis",
+      "name": "Vastus medialis",
+      "group": "quadriceps",
+      "anatomicalNames": [
+        "Vastus medialis"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "patella_region",
+      "name": "Patella / front knee",
+      "group": "joints",
+      "anatomicalNames": [
+        "Patella and anterior knee region"
+      ],
+      "kind": "joint",
+      "selectable": false,
+      "mappingPrecision": "schematic_region",
+      "note": "A joint / bone region, not a muscle. Excluded from muscle selection by default."
+    },
+    {
+      "id": "tibialis_anterior",
+      "name": "Tibialis anterior",
+      "group": "shins",
+      "anatomicalNames": [
+        "Tibialis anterior"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "gastrocnemius",
+      "name": "Gastrocnemius",
+      "group": "calves",
+      "anatomicalNames": [
+        "Gastrocnemius"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Front-view calf panels are schematic projections. Rear panels distinguish the medial and lateral heads through subregion metadata."
+    },
+    {
+      "id": "fibularis_group",
+      "name": "Fibularis (peroneal) group",
+      "group": "shins",
+      "anatomicalNames": [
+        "Fibularis longus",
+        "Fibularis brevis"
+      ],
+      "kind": "muscle_group",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Simplified lateral lower-leg strip; individual longus and brevis boundaries are not resolved."
+    },
+    {
+      "id": "soleus",
+      "name": "Soleus",
+      "group": "calves",
+      "anatomicalNames": [
+        "Soleus"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary. The broad rear panel below the gastrocnemius (subregion lower_central) is the soleus above its junction with the Achilles tendon."
+    },
+    {
+      "id": "posterior_rotator_cuff",
+      "name": "Posterior rotator cuff",
+      "group": "upper_back",
+      "anatomicalNames": [
+        "Infraspinatus",
+        "Teres minor"
+      ],
+      "kind": "muscle_group",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "A simplified posterior scapular panel. It does not separately resolve infraspinatus, teres minor, or adjacent structures."
+    },
+    {
+      "id": "triceps_brachii",
+      "name": "Triceps brachii",
+      "group": "upper_arms",
+      "anatomicalNames": [
+        "Triceps brachii"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Several panels represent the triceps region. Exact long, lateral, and medial head boundaries are not asserted by the artwork."
+    },
+    {
+      "id": "latissimus_dorsi",
+      "name": "Latissimus dorsi (lats)",
+      "group": "upper_back",
+      "anatomicalNames": [
+        "Latissimus dorsi"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "erector_spinae",
+      "name": "Erector spinae / lower back",
+      "group": "lower_back",
+      "anatomicalNames": [
+        "Lumbar erector spinae group"
+      ],
+      "kind": "muscle_group",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Simplified lumbar region including overlying fascia; not a precise outline of the individual deep spinal muscles."
+    },
+    {
+      "id": "forearm_extensors",
+      "name": "Forearm extensors",
+      "group": "forearms",
+      "anatomicalNames": [
+        "Superficial forearm extensor compartment"
+      ],
+      "kind": "muscle_group",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "The connected stylized posterior forearm panel does not isolate the individual extensor muscles or tendons."
+    },
+    {
+      "id": "gluteus_medius",
+      "name": "Gluteus medius",
+      "group": "glutes",
+      "anatomicalNames": [
+        "Gluteus medius"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "gluteus_maximus",
+      "name": "Gluteus maximus",
+      "group": "glutes",
+      "anatomicalNames": [
+        "Gluteus maximus"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "iliotibial_tract",
+      "name": "Iliotibial band region",
+      "group": "connective_tissue",
+      "anatomicalNames": [
+        "Iliotibial tract"
+      ],
+      "kind": "fascia",
+      "selectable": false,
+      "mappingPrecision": "schematic_region",
+      "note": "Schematic lateral thigh fascia region; not a muscle. Excluded from muscle selection by default."
+    },
+    {
+      "id": "biceps_femoris",
+      "name": "Biceps femoris",
+      "group": "hamstrings",
+      "anatomicalNames": [
+        "Biceps femoris"
+      ],
+      "kind": "muscle",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Panel position is a schematic fitness-app region; it is not a dissection boundary."
+    },
+    {
+      "id": "medial_hamstrings",
+      "name": "Medial hamstrings",
+      "group": "hamstrings",
+      "anatomicalNames": [
+        "Semitendinosus",
+        "Semimembranosus"
+      ],
+      "kind": "muscle_group",
+      "selectable": true,
+      "mappingPrecision": "schematic_region",
+      "note": "Grouped medial hamstring panel; the drawing does not reliably separate semitendinosus from semimembranosus."
+    },
+    {
+      "id": "popliteal_region",
+      "name": "Back of knee (popliteal region)",
+      "group": "joints",
+      "anatomicalNames": [
+        "Popliteal fossa region"
+      ],
+      "kind": "joint",
+      "selectable": false,
+      "mappingPrecision": "schematic_region",
+      "note": "Posterior knee region, not an exposed popliteus muscle. Excluded from muscle selection by default."
+    },
+    {
+      "id": "achilles_tendon",
+      "name": "Achilles tendon region",
+      "group": "connective_tissue",
+      "anatomicalNames": [
+        "Calcaneal / Achilles tendon"
+      ],
+      "kind": "tendon",
+      "selectable": false,
+      "mappingPrecision": "schematic_region",
+      "note": "Narrow lower part of the central calf shape, from the soleus junction to the heel; a tendon, not a muscle."
+    },
+    {
+      "id": "patellar_tendon_region",
+      "name": "Patellar tendon / upper shin region",
+      "group": "connective_tissue",
+      "anatomicalNames": [
+        "Patellar ligament and upper anterior shin region"
+      ],
+      "kind": "tendon",
+      "selectable": false,
+      "mappingPrecision": "schematic_region",
+      "note": "Region below the kneecap; not a muscle (the gastrocnemius arises behind the knee). Excluded from muscle selection by default."
+    }
+  ]
+}

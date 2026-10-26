@@ -7,11 +7,24 @@
 
 import { useId, useMemo } from "react";
 import { Target } from "lucide-react";
-import CorpsSvg, { vueMontre, type Vue } from "./anatomie/CorpsSvg";
+import { VIEWBOX, vueMontre, type Vue } from "./anatomie/CorpsSvg";
+import CorpsZoom from "./anatomie/CorpsZoom";
+import { boiteDeRegions, fenetreSur, type Fenetre } from "@/lib/domain/cadrage";
 import { MUSCLE_VERS_REGIONS, type BaseRegion, type NiveauVolume } from "@/lib/domain/anatomie";
 import { MUSCLE_LABELS } from "@/lib/domain/muscleMapping";
 import type { MuscleDetail, RoleMuscle } from "@/lib/domain/types";
 import { Card, CardHeader, CardTitle, CardDescription } from "./ui/card";
+
+/**
+ * Proportions de la boîte d'affichage (largeur / hauteur).
+ *
+ * Elle est volontairement moins élancée que le corps entier. Si on gardait
+ * les proportions du corps, toute zone un peu large — un dos, des pectoraux —
+ * forcerait la hauteur totale et il n'y aurait plus de zoom du tout. Ici la
+ * boîte reste fixe d'un exercice à l'autre : seule la zone regardée change,
+ * la fiche ne saute pas.
+ */
+const RATIO_FICHE = 0.72;
 
 export default function MuscleMapDetail({
   muscles,
@@ -20,9 +33,10 @@ export default function MuscleMapDetail({
 }) {
   const uid = useId().replace(/:/g, "");
 
-  const { intensites, vues } = useMemo(() => {
+  const { intensites, vues, fenetres } = useMemo(() => {
     const map: Record<BaseRegion, NiveauVolume> = {};
     const set = new Set<BaseRegion>();
+    const primaires = new Set<BaseRegion>();
     // Les secondaires d'abord : un muscle à la fois primaire et secondaire
     // doit finir au palier primaire.
     for (const role of ["secondaire", "primaire"] as const) {
@@ -30,11 +44,29 @@ export default function MuscleMapDetail({
         for (const r of MUSCLE_VERS_REGIONS[m.muscle] ?? []) {
           map[r] = role === "primaire" ? 4 : 2;
           set.add(r);
+          if (role === "primaire") primaires.add(r);
         }
       }
     }
     const v = (["face", "dos"] as Vue[]).filter((x) => vueMontre(x, set));
-    return { intensites: map, vues: v.length > 0 ? v : (["face"] as Vue[]) };
+    const vuesFinales = v.length > 0 ? v : (["face"] as Vue[]);
+
+    // Une fenêtre par vue, cadrée sur ce que CETTE vue montre de l'exercice.
+    // Les proportions restent celles du corps : la boîte d'affichage ne bouge
+    // pas d'un exercice à l'autre, seule la zone regardée change.
+    const f: Partial<Record<Vue, Fenetre>> = {};
+    for (const vue of vuesFinales) {
+      const boite = boiteDeRegions(vue, primaires) ?? boiteDeRegions(vue, set);
+      f[vue] = fenetreSur(VIEWBOX[vue], boite, {
+        marge: 0.42,
+        zoomMax: 2.2,
+        // Plancher : une vue qui ne porte que des secondaires eparpilles
+        // restait a x1,4 et paraissait non zoomee a cote de l'autre.
+        zoomMin: 1.85,
+        ratio: RATIO_FICHE,
+      });
+    }
+    return { intensites: map, vues: vuesFinales, fenetres: f };
   }, [muscles]);
 
   if (muscles.length === 0) {
@@ -65,19 +97,33 @@ export default function MuscleMapDetail({
         </div>
       </CardHeader>
 
-      <div className="flex items-center justify-center gap-5 px-2 py-4">
+      <div className="flex items-start justify-center gap-4 px-3 py-4">
         {vues.map((v) => (
-          <div key={v} className="flex flex-col items-center">
+          <div key={v} className="flex min-w-0 flex-1 flex-col items-center" style={{ maxWidth: `calc(var(--fiche-corps-h, 190px) * ${RATIO_FICHE})` }}>
             {/* Pas de `surlignes` ici : il repeint toutes les portions dans la
                 même teinte de surlignage et écrase la distinction primaire /
                 secondaire. Ce sont les paliers (4 vs 2) qui la portent. */}
-            <CorpsSvg
-              vue={v}
-              uid={uid}
-              intensites={intensites}
-              hauteur="var(--fiche-corps-h, 190px)"
-              titre={`Muscles sollicités, vue ${v === "face" ? "de face" : "de dos"}`}
-            />
+            {/* La boîte se partage la largeur de la carte plutôt que de la
+                déduire de sa hauteur : avec deux vues côte à côte et des
+                proportions moins élancées que le corps, une largeur fixe
+                débordait de la carte. La hauteur suit par le ratio. */}
+            <div
+              style={{
+                flex: "1 1 0",
+                minWidth: 0,
+                maxWidth: `calc(var(--fiche-corps-h, 190px) * ${RATIO_FICHE})`,
+                aspectRatio: String(RATIO_FICHE),
+              }}
+            >
+              <CorpsZoom
+                vue={v}
+                uid={uid}
+                intensites={intensites}
+                cible={fenetres[v] ?? VIEWBOX[v]}
+                remplir
+                titre={`Muscles sollicités, vue ${v === "face" ? "de face" : "de dos"}`}
+              />
+            </div>
             <p className="mt-1.5 text-[10px] uppercase tracking-widest text-[var(--grey)]">
               {v === "face" ? "Face" : "Dos"}
             </p>

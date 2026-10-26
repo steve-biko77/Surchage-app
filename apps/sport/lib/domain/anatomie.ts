@@ -1,113 +1,121 @@
 // Couche anatomique : relie le domaine (GroupeMusculaire, MuscleDetail) aux
-// regions du trace SVG `body-muscles` (Apache-2.0, cf. NOTICE a la racine de l'app).
+// régions du tracé Open-Muscle-Map (MIT, cf. lib/anatomie/omm/LICENSE).
 //
-// Le trace distingue des PORTIONS que le domaine ne connait pas encore
-// (triceps long vs lateral, traps haut/moyen/bas, gastrocnemien median vs
-// lateral...). On les expose ici pour que la carte puisse les allumer
-// separement des que les exercices porteront l'information ; en attendant,
-// un groupe allume toutes ses portions d'un bloc.
+// Le tracé précédent (body-muscles) était facetté : des polygones à plat qui,
+// réduits à la taille d'une vignette, ne ressemblaient plus à un muscle. Celui-ci
+// est dessiné sur de vrais contours. Il est aussi plus fin là où ça compte pour
+// un entraînement — trois chefs de quadriceps, gastrocnémien et soléaire
+// séparés, quatre segments de grand droit — et porte ses propres boîtes
+// englobantes, dont le recadrage se sert directement.
+//
+// Une région ici est un `muscleId` du tracé. Les sous-portions existent dans
+// les données (trapèze supérieur, grand droit haut...) mais ne servent qu'à
+// l'affichage : le domaine raisonne au muscle, pas au faisceau, et allumer un
+// muscle allume toutes ses portions.
 
 import type { GroupeMusculaire, MuscleDetail } from "./types";
 
-/** Nom de region sans le suffixe de cote : "triceps-long", pas "triceps-long-left". */
+/** Identifiant de muscle du tracé : "latissimus_dorsi", "vastus_medialis"... */
 export type BaseRegion = string;
 
-/** Libelle FR affiche au survol d'une portion. */
+/** Libellé FR affiché au survol d'une portion. */
 export const REGION_LABELS: Record<BaseRegion, string> = {
-  // Epaules
-  "shoulder-front": "Deltoïde antérieur",
-  "shoulder-side": "Deltoïde latéral",
-  "deltoid-rear": "Deltoïde postérieur",
+  // Épaules
+  // Le sterno-cléido-mastoïdien est volontairement absent : le tracé le
+  // dessine, mais aucun groupe du domaine ne l'entraîne. Sans libellé il
+  // devient inerte, donc ni coloré ni cliquable — plutôt qu'un muscle qu'on
+  // survole pour rien.
+  anterior_deltoid: "Deltoïde antérieur",
+  lateral_deltoid: "Deltoïde latéral",
+  posterior_deltoid: "Deltoïde postérieur",
+  posterior_rotator_cuff: "Coiffe des rotateurs",
   // Dos
-  "traps-upper": "Trapèze supérieur",
-  "traps-mid": "Trapèze moyen",
-  "traps-lower": "Trapèze inférieur",
-  "lats-upper": "Grand dorsal — faisceau supérieur",
-  "lats-mid": "Grand dorsal — faisceau moyen",
-  "lats-lower": "Grand dorsal — faisceau inférieur",
-  "lower-back-erectors": "Érecteurs du rachis",
-  "lower-back-ql": "Carré des lombes",
-  // Pectoraux
-  "chest-upper": "Pectoral — faisceau claviculaire",
-  "chest-lower": "Pectoral — faisceau sternocostal",
+  trapezius: "Trapèze",
+  latissimus_dorsi: "Grand dorsal",
+  erector_spinae: "Érecteurs du rachis",
+  // Buste
+  pectoralis_major: "Pectoral",
+  serratus_anterior: "Dentelé antérieur",
+  rectus_abdominis: "Grand droit",
+  external_oblique: "Oblique externe",
   // Bras
-  biceps: "Biceps brachial",
-  "triceps-long": "Triceps — longue portion",
-  "triceps-lateral": "Triceps — vaste latéral",
-  forearm: "Avant-bras",
-  "forearm-flexors": "Avant-bras — fléchisseurs",
-  "forearm-extensors": "Avant-bras — extenseurs",
-  // Tronc
-  "abs-upper": "Grand droit — portion haute",
-  "abs-lower": "Grand droit — portion basse",
-  obliques: "Obliques",
-  "serratus-anterior": "Dentelé antérieur",
-  "hip-flexor": "Fléchisseurs de hanche",
-  // Jambes
-  quads: "Quadriceps",
-  adductors: "Adducteurs",
-  "hamstrings-medial": "Ischio-jambiers — faisceau médial",
-  "hamstrings-lateral": "Ischio-jambiers — faisceau latéral",
-  "gluteus-maximus": "Grand fessier",
-  "gluteus-medius": "Moyen fessier",
-  "calves-gastroc-medial": "Gastrocnémien médial",
-  "calves-gastroc-lateral": "Gastrocnémien latéral",
-  "calves-soleus": "Soléaire",
-  "tibialis-anterior": "Tibial antérieur",
+  biceps_brachii: "Biceps brachial",
+  brachialis: "Brachial antérieur",
+  triceps_brachii: "Triceps brachial",
+  forearm_flexors: "Avant-bras — fléchisseurs",
+  forearm_extensors: "Avant-bras — extenseurs",
+  // Hanche et cuisse
+  iliopsoas: "Psoas-iliaque",
+  tensor_fasciae_latae: "Tenseur du fascia lata",
+  sartorius: "Couturier",
+  hip_adductors: "Adducteurs",
+  rectus_femoris: "Droit fémoral",
+  vastus_lateralis: "Vaste latéral",
+  vastus_medialis: "Vaste médial",
+  gluteus_maximus: "Grand fessier",
+  gluteus_medius: "Moyen fessier",
+  biceps_femoris: "Biceps fémoral",
+  medial_hamstrings: "Ischio-jambiers médiaux",
+  // Jambe
+  gastrocnemius: "Gastrocnémien",
+  soleus: "Soléaire",
+  tibialis_anterior: "Tibial antérieur",
+  fibularis_group: "Fibulaires",
 };
 
 /**
- * Regions non entrainables : tete, mains, pieds, articulations, colonne.
- * Elles restent dans le trace pour que la silhouette soit complete, mais ne
- * portent ni intensite, ni interaction.
+ * Régions non entraînables : articulations, tendons, fascia. Elles restent
+ * dessinées pour que le corps soit complet, mais ne portent ni intensité ni
+ * interaction. Le tracé les marque lui-même `selectable: false` — cette liste
+ * n'est qu'un garde-fou lisible, la source de vérité reste la donnée.
  */
 export const REGIONS_INERTES = new Set<BaseRegion>([
-  "head", "face", "head-back", "nape", "neck",
-  "hand", "hand-back", "foot", "foot-back",
-  "elbow", "knee", "knee-back", "spine",
+  "patella_region",
+  "patellar_tendon_region",
+  "popliteal_region",
+  "achilles_tendon",
+  "iliotibial_tract",
 ]);
 
-/** Groupe du domaine -> portions a allumer. */
+/** Groupe du domaine -> muscles à allumer. */
 export const GROUPE_VERS_REGIONS: Record<GroupeMusculaire, BaseRegion[]> = {
-  dos: [
-    "traps-upper", "traps-mid", "traps-lower",
-    "lats-upper", "lats-mid", "lats-lower",
-    "lower-back-erectors", "lower-back-ql",
-  ],
-  biceps: ["biceps"],
-  triceps: ["triceps-long", "triceps-lateral"],
-  epaules: ["shoulder-front", "shoulder-side", "deltoid-rear"],
-  pectoraux: ["chest-upper", "chest-lower"],
+  dos: ["trapezius", "latissimus_dorsi", "erector_spinae", "posterior_rotator_cuff"],
+  biceps: ["biceps_brachii", "brachialis"],
+  triceps: ["triceps_brachii"],
+  epaules: ["anterior_deltoid", "lateral_deltoid", "posterior_deltoid"],
+  pectoraux: ["pectoralis_major"],
   jambes: [
-    "quads", "adductors",
-    "hamstrings-medial", "hamstrings-lateral",
-    "gluteus-maximus", "gluteus-medius",
+    "rectus_femoris", "vastus_lateralis", "vastus_medialis",
+    "hip_adductors", "tensor_fasciae_latae", "sartorius",
+    "biceps_femoris", "medial_hamstrings",
+    "gluteus_maximus", "gluteus_medius",
   ],
-  "avant-bras": ["forearm", "forearm-flexors", "forearm-extensors"],
-  abdominaux: ["abs-upper", "abs-lower", "obliques", "serratus-anterior"],
-  mollets: [
-    "calves-gastroc-medial", "calves-gastroc-lateral",
-    "calves-soleus", "tibialis-anterior",
-  ],
+  "avant-bras": ["forearm_flexors", "forearm_extensors"],
+  // Le psoas-iliaque travaille sur tout relevé de jambes : il appartient au
+  // bloc abdominaux côté entraînement, même si l'anatomie le classe ailleurs.
+  abdominaux: ["rectus_abdominis", "external_oblique", "serratus_anterior", "iliopsoas"],
+  mollets: ["gastrocnemius", "soleus", "tibialis_anterior", "fibularis_group"],
 };
 
-/** Muscle detaille (reference exercice) -> portions. Plus fin que le groupe. */
+/** Muscle détaillé (référentiel exercices) -> muscles du tracé. */
 export const MUSCLE_VERS_REGIONS: Record<MuscleDetail, BaseRegion[]> = {
-  deltoide_anterieur: ["shoulder-front"],
-  deltoide_lateral: ["shoulder-side"],
-  deltoide_posterieur: ["deltoid-rear"],
-  trapeze: ["traps-upper", "traps-mid", "traps-lower"],
-  grand_dorsal: ["lats-upper", "lats-mid", "lats-lower"],
-  pectoraux: ["chest-upper", "chest-lower"],
-  biceps: ["biceps"],
-  triceps: ["triceps-long", "triceps-lateral"],
-  avant_bras: ["forearm", "forearm-flexors", "forearm-extensors"],
-  abdominaux: ["abs-upper", "abs-lower"],
-  obliques: ["obliques", "serratus-anterior"],
-  quadriceps: ["quads"],
-  ischio_jambiers: ["hamstrings-medial", "hamstrings-lateral"],
-  fessiers: ["gluteus-maximus", "gluteus-medius"],
-  mollets: ["calves-gastroc-medial", "calves-gastroc-lateral", "calves-soleus"],
+  deltoide_anterieur: ["anterior_deltoid"],
+  deltoide_lateral: ["lateral_deltoid"],
+  deltoide_posterieur: ["posterior_deltoid"],
+  trapeze: ["trapezius"],
+  grand_dorsal: ["latissimus_dorsi"],
+  pectoraux: ["pectoralis_major"],
+  // Le brachial travaille sur tout curl : le tracé le distingue, autant le dire.
+  biceps: ["biceps_brachii", "brachialis"],
+  triceps: ["triceps_brachii"],
+  avant_bras: ["forearm_flexors", "forearm_extensors"],
+  abdominaux: ["rectus_abdominis"],
+  obliques: ["external_oblique", "serratus_anterior"],
+  // Trois chefs distincts, là où l'ancien tracé n'avait qu'un bloc "quads".
+  quadriceps: ["rectus_femoris", "vastus_lateralis", "vastus_medialis"],
+  ischio_jambiers: ["biceps_femoris", "medial_hamstrings"],
+  fessiers: ["gluteus_maximus", "gluteus_medius"],
+  mollets: ["gastrocnemius", "soleus"],
 };
 
 /** Portion -> groupe du domaine. Index inverse, pour remonter d'un clic au groupe. */
@@ -119,7 +127,7 @@ export const REGION_VERS_GROUPE: Record<BaseRegion, GroupeMusculaire> = (() => {
   return index;
 })();
 
-/** Libelle FR des groupes, pour les titres et le panneau de detail. */
+/** Libellé FR des groupes, pour les titres et le panneau de détail. */
 export const GROUPE_LABELS: Record<GroupeMusculaire, string> = {
   dos: "Dos",
   biceps: "Biceps",
@@ -132,19 +140,23 @@ export const GROUPE_LABELS: Record<GroupeMusculaire, string> = {
   mollets: "Mollets",
 };
 
-/** Retire le suffixe de cote d'un id de region du trace. */
-export function baseDeRegion(id: string): BaseRegion {
-  return id.replace(/-(left|right)$/, "");
+/**
+ * Région de base d'une clé de portion : "trapezius:upper" -> "trapezius".
+ * Le domaine raisonne au muscle ; la sous-portion ne sert qu'à l'affichage.
+ */
+export function baseDeRegion(cle: string): BaseRegion {
+  const i = cle.indexOf(":");
+  return i === -1 ? cle : cle.slice(0, i);
 }
 
-/** 5 paliers de volume hebdomadaire, en series travaillees. */
+/** 5 paliers de volume hebdomadaire, en séries travaillées. */
 export const PALIERS_VOLUME = [0, 1, 4, 8, 14] as const;
 export type NiveauVolume = 0 | 1 | 2 | 3 | 4;
 
 /**
- * Series d'un groupe sur 7 jours -> palier d'intensite.
+ * Séries d'un groupe sur 7 jours -> palier d'intensité.
  * Les seuils suivent les recommandations de volume hebdomadaire par groupe
- * (~10 series = volume d'entretien, ~14+ = volume de prise).
+ * (~10 séries = volume d'entretien, ~14+ = volume de prise).
  */
 export function niveauDepuisSets(sets: number): NiveauVolume {
   if (sets <= 0) return 0;
@@ -162,7 +174,7 @@ export const LIBELLES_NIVEAU: Record<NiveauVolume, string> = {
   4: "Volume élevé",
 };
 
-/** Intensite par portion, calculee depuis les series reelles agregees par groupe. */
+/** Intensité par portion, calculée depuis les séries réelles agrégées par groupe. */
 export function intensitesParRegion(
   volumeParGroupe: Record<string, number>
 ): Record<BaseRegion, NiveauVolume> {
