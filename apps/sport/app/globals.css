@@ -188,9 +188,16 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* --- Scène 3D : le corps se retourne, il ne se fond pas --- */
+/* La scène déclare sa largeur au lieu de la laisser à zéro. Ses enfants sont
+   en position absolue : sans largeur propre, la colonne se refermait sur rien
+   et le corps débordait sur le panneau voisin. Le facteur est le rapport du
+   tracé (627 / 1254) — bras écartés compris. */
 .anat-scene {
   position: relative; perspective: 1400px;
-  height: clamp(330px, 52vh, 620px);
+  --anat-h: clamp(330px, 52vh, 620px);
+  height: var(--anat-h);
+  width: calc(var(--anat-h) * 0.5);
+  margin-inline: auto;
 }
 .anat-pivot {
   position: relative; width: 100%; height: 100%;
