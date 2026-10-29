@@ -10,6 +10,12 @@
 // Deux façons de déplacer, délibérément : le glisser pour qui est à l'aise,
 // les flèches pour le reste. Au doigt, sur un écran de téléphone, pendant une
 // séance et les mains moites, la flèche ne rate jamais sa cible.
+//
+// À la souris, on saisit la ligne entière : personne ne vise une poignée quand
+// la ligne a l'air prenable. Au doigt, la saisie reste réservée à la poignée,
+// et pour une raison précise — la liste doit pouvoir défiler. Si toute la
+// ligne captait le geste vertical, une séance de neuf exercices deviendrait
+// impossible à parcourir sur un téléphone.
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -55,8 +61,15 @@ export default function OrdreSeance({
   // d'une autre ligne on permute, la liste se réarrange sous le doigt et
   // l'aperçu EST le résultat — pas besoin d'un fantôme à positionner.
   function debutGlisse(e: React.PointerEvent, id: string) {
+    if ((e.target as HTMLElement).closest("button")) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setSaisi(id);
+  }
+
+  /** Saisie depuis la ligne : souris et stylet seulement, cf. en-tête. */
+  function debutLigne(e: React.PointerEvent, id: string) {
+    if (e.pointerType === "touch") return;
+    debutGlisse(e, id);
   }
 
   function glisse(e: React.PointerEvent) {
@@ -104,7 +117,7 @@ export default function OrdreSeance({
       <div className="ordre-tete">
         <div>
           <h3>Ordre des exercices</h3>
-          <p>Glisse une ligne, ou utilise les flèches.</p>
+          <p>Attrape une ligne par sa poignée, ou utilise les flèches.</p>
         </div>
         <button type="button" className="ordre-fermer" onClick={onFerme} aria-label="Quitter la réorganisation">
           <X className="h-4 w-4" aria-hidden="true" />
@@ -113,15 +126,18 @@ export default function OrdreSeance({
 
       <ul className="ordre-liste" ref={listeRef} onPointerMove={glisse} onPointerUp={finGlisse} onPointerCancel={finGlisse}>
         {ordre.map((exo, i) => (
-          <li key={exo.id} data-id={exo.id} className={`ordre-ligne${saisi === exo.id ? " saisi" : ""}`}>
+          <li
+            key={exo.id}
+            data-id={exo.id}
+            className={`ordre-ligne${saisi === exo.id ? " saisi" : ""}`}
+            onPointerDown={(e) => debutLigne(e, exo.id)}
+          >
             <span
               className="ordre-poignee"
               onPointerDown={(e) => debutGlisse(e, exo.id)}
-              role="button"
-              tabIndex={-1}
               aria-hidden="true"
             >
-              <GripVertical className="h-4 w-4" />
+              <GripVertical className="h-5 w-5" />
             </span>
 
             <span className="ordre-rang">{i + 1}</span>

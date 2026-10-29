@@ -892,7 +892,11 @@ input:focus, select:focus, textarea:focus {
 .ordre-liste { list-style: none; margin: 0; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
 .ordre-ligne {
   display: flex; align-items: center; gap: 10px; padding: 7px 8px;
-  border-radius: 12px; background: var(--bg-card-2); touch-action: none;
+  border-radius: 12px; background: var(--bg-card-2);
+  /* La ligne laisse passer le défilement vertical : une séance de neuf
+     exercices doit rester parcourable au doigt. Seule la poignée capte
+     le geste. */
+  touch-action: pan-y; cursor: grab;
   transition: background 0.14s, box-shadow 0.14s, transform 0.14s;
 }
 /* La ligne saisie se décolle : c'est elle qu'on déplace, les autres
@@ -902,11 +906,16 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8), inset 0 0 0 1px var(--accent);
   transform: scale(1.015);
 }
+/* Poignée large et colorée : c'est elle qu'on vise au doigt, et elle doit
+   se voir comme une prise, pas comme une décoration. */
 .ordre-poignee {
-  flex: none; display: grid; place-items: center; width: 26px; height: 34px;
-  color: var(--grey); cursor: grab;
+  flex: none; display: grid; place-items: center;
+  width: 38px; height: 44px; margin: -5px -4px -5px -2px;
+  border-radius: 10px; touch-action: none; cursor: grab;
+  color: var(--accent-text); background: rgba(var(--accent-rgb), 0.12);
 }
-.ordre-ligne.saisi .ordre-poignee { cursor: grabbing; color: var(--accent-text); }
+.ordre-poignee:hover { background: rgba(var(--accent-rgb), 0.22); }
+.ordre-ligne.saisi, .ordre-ligne.saisi .ordre-poignee { cursor: grabbing; }
 .ordre-rang {
   flex: none; width: 20px; text-align: center;
   font-family: var(--font-display, inherit); font-size: 13px; font-weight: 800;
