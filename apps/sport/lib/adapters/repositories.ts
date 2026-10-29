@@ -234,6 +234,15 @@ export const seancesPlanifieesRepository = {
       .returning();
     return { ...row, exerciceIds: deserializeExerciceIds(row.exerciceIds) };
   },
+  /** Nouvel ordre des exercices. L'ordre vit dans la colonne, pas ailleurs. */
+  async setExerciceIds(id: string, exerciceIds: string[]) {
+    const [row] = await db
+      .update(seancesPlanifiees)
+      .set({ exerciceIds: serializeExerciceIds(exerciceIds) })
+      .where(eq(seancesPlanifiees.id, id))
+      .returning();
+    return row ? { ...row, exerciceIds: deserializeExerciceIds(row.exerciceIds) } : null;
+  },
   async setStatut(id: string, statut: StatutSeancePlanifiee) {
     const [row] = await db.update(seancesPlanifiees).set({ statut }).where(eq(seancesPlanifiees.id, id)).returning();
     return row ? { ...row, exerciceIds: deserializeExerciceIds(row.exerciceIds) } : null;

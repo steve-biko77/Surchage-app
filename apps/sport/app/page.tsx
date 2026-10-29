@@ -8,6 +8,7 @@ import { calculerNiveauFlamme, calculerResumeSeance, todayISO } from "@/lib/doma
 import type { GroupeMusculaire } from "@/lib/domain/types";
 import { GROUPE_LABELS } from "@/lib/domain/anatomie";
 import ExerciseCard from "@/components/ExerciseCard";
+import SeanceReorganisable from "@/components/SeanceReorganisable";
 import FlameBadge from "@/components/FlameBadge";
 import CarteMusculaireSection, { type GroupeVM } from "@/components/CarteMusculaireSection";
 import SeanceResumeWidget from "@/components/SeanceResumeWidget";
@@ -129,11 +130,19 @@ export default async function SeanceDuJourPage() {
       {!nomSeance || !estPlanifiee ? <CarrouselModeles exercices={tousExercices} /> : null}
 
       {exercicesAvecCible.length > 0 && (
-        <div className="exos-grille">
-          {exercicesAvecCible.map((exo) => (
-            <ExerciseCard key={exo.id} exercice={exo} />
-          ))}
-        </div>
+        <SeanceReorganisable
+          exercices={exercicesAvecCible.map((e) => ({
+            id: e.id,
+            nom: e.nom,
+            groupeMusculaire: e.groupeMusculaire,
+          }))}
+        >
+          <div className="exos-grille">
+            {exercicesAvecCible.map((exo) => (
+              <ExerciseCard key={exo.id} exercice={exo} />
+            ))}
+          </div>
+        </SeanceReorganisable>
       )}
     </div>
   );
