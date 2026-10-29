@@ -43,19 +43,32 @@ const CHUTE_Y = 11;
  */
 const VOISINS = 3;
 
+/** Cadence de la rotation libre. */
+const CADENCE = 3800;
+/** Silence observé après une action avant de reprendre la rotation. */
+const REPRISE = 9000;
+
 export default function EventailObjectifs({
   objectifs,
   actif,
   onActif,
+  gele = false,
 }: {
   objectifs: CarteObjectif[];
   actif: number;
   onActif: (i: number) => void;
+  /** Suspend la rotation — typiquement quand on saisit dans la fiche. */
+  gele?: boolean;
 }) {
   // Position flottante : l'index actif pendant le repos, décalé d'une fraction
   // pendant le glissement pour que l'éventail suive le doigt au lieu de sauter
   // d'un cran à la relâche.
   const [glisse, setGlisse] = useState(0);
+  // La rotation s'arrête dès qu'on agit, et reprend après un silence. Une
+  // carte qui tourne pendant qu'on vise un bouton est une carte qu'on rate.
+  const [enPause, setEnPause] = useState(false);
+  const sens = useRef(1);
+  const repriseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cadreRef = useRef<HTMLDivElement>(null);
   const geste = useRef<{ x: number; y: number; axe: "?" | "x" | "y"; depart: number } | null>(null);
 
@@ -71,13 +84,42 @@ export default function EventailObjectifs({
   const dernier = Math.min(objectifs.length - 1, Math.round(position) + VOISINS);
   const recentrage = (premier + dernier) / 2 - position;
 
+  /** Marque une action : pause, puis reprise après un silence. */
+  const toucher = useCallback(() => {
+    setEnPause(true);
+    if (repriseRef.current) clearTimeout(repriseRef.current);
+    repriseRef.current = setTimeout(() => setEnPause(false), REPRISE);
+  }, []);
+
   const aller = useCallback(
-    (i: number) => onActif(Math.max(0, Math.min(objectifs.length - 1, i))),
-    [objectifs.length, onActif]
+    (i: number) => {
+      toucher();
+      onActif(Math.max(0, Math.min(objectifs.length - 1, i)));
+    },
+    [objectifs.length, onActif, toucher]
   );
+
+  // Rotation libre, en va-et-vient plutôt qu'en boucle : repasser de la
+  // dernière carte à la première ferait traverser tout l'éventail d'un coup.
+  // Le demi-tour aux extrémités garde un mouvement continu.
+  useEffect(() => {
+    if (enPause || gele || objectifs.length < 2) return;
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const minuteur = setTimeout(() => {
+      let suivant = actif + sens.current;
+      if (suivant >= objectifs.length) { sens.current = -1; suivant = actif - 1; }
+      else if (suivant < 0) { sens.current = 1; suivant = actif + 1; }
+      onActif(suivant);
+    }, CADENCE);
+    return () => clearTimeout(minuteur);
+  }, [actif, enPause, gele, objectifs.length, onActif]);
+
+  useEffect(() => () => { if (repriseRef.current) clearTimeout(repriseRef.current); }, []);
 
   function debut(e: React.PointerEvent) {
     if ((e.target as HTMLElement).closest("button")) return;
+    toucher();
     geste.current = { x: e.clientX, y: e.clientY, axe: "?", depart: actif };
   }
 
@@ -135,6 +177,7 @@ export default function EventailObjectifs({
         role="listbox"
         aria-label="Objectifs"
         aria-activedescendant={`evt-${objectifs[actif]?.id}`}
+        onPointerEnter={toucher}
         onPointerDown={debut}
         onPointerMove={mouvement}
         onPointerUp={fin}

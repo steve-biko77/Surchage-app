@@ -185,6 +185,9 @@ export default function ObjectifsClient({
   // pour mettre deux objectifs côte à côte.
   const [vue, setVue] = useState<"eventail" | "liste">("eventail");
   const [actif, setActif] = useState(0);
+  // La rotation se fige pendant qu'on saisit dans la fiche : voir les cartes
+  // défiler sous un champ qu'on remplit est le meilleur moyen de perdre le fil.
+  const [saisieEnCours, setSaisieEnCours] = useState(false);
 
   // Une suppression peut laisser l'index hors des bornes.
   const nb = initialObjectifs.length;
@@ -317,12 +320,17 @@ export default function ObjectifsClient({
                 }))}
                 actif={actif}
                 onActif={setActif}
+                gele={saisieEnCours}
               />
             )}
 
             {/* En éventail, une seule fiche : celle de la carte soulevée. En
                 liste, toutes — c'est la vue qui sert à comparer. */}
-            <div className={vue === "liste" ? "grid g-2" : "obj-solo"}>
+            <div
+              className={vue === "liste" ? "grid g-2" : "obj-solo"}
+              onFocusCapture={() => setSaisieEnCours(true)}
+              onBlurCapture={() => setSaisieEnCours(false)}
+            >
               {(vue === "liste" ? initialObjectifs : [initialObjectifs[actif]].filter(Boolean)).map((o, idx) => {
               const i = vue === "liste" ? idx : actif;
               return (
