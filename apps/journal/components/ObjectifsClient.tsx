@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/lib/toast";
 import { ProgressRing } from "./charts";
 import Segmented from "./Segmented";
 import { IconTarget, IconPlus, IconClock, IconX } from "./icons";
+import EventailObjectifs from "./EventailObjectifs";
 
 type TypeObjectif = "temps" | "metrique";
 type Sens = "croissant" | "decroissant";
@@ -179,6 +180,17 @@ export default function ObjectifsClient({
   const [deadline, setDeadline] = useState("");
   const [saving, setSaving] = useState(false);
   const [valeurInputs, setValeurInputs] = useState<Record<string, string>>({});
+  // L'éventail est la vue par défaut : il montre, la liste compare. Les deux
+  // existent parce qu'aucune ne remplace l'autre — un carrousel ne sert à rien
+  // pour mettre deux objectifs côte à côte.
+  const [vue, setVue] = useState<"eventail" | "liste">("eventail");
+  const [actif, setActif] = useState(0);
+
+  // Une suppression peut laisser l'index hors des bornes.
+  const nb = initialObjectifs.length;
+  useEffect(() => {
+    setActif((a) => (a >= nb ? Math.max(0, nb - 1) : a));
+  }, [nb]);
 
   async function creer() {
     if (!nom) {
@@ -271,11 +283,20 @@ export default function ObjectifsClient({
                 : `${initialObjectifs.length} objectif${initialObjectifs.length > 1 ? "s" : ""} suivi${initialObjectifs.length > 1 ? "s" : ""}`}
             </p>
           </div>
-          {indice != null && (
-            <div className="ph-right">
-              <IndiceProductivite valeur={indice} />
-            </div>
-          )}
+          <div className="ph-right">
+            {indice != null && <IndiceProductivite valeur={indice} />}
+            {initialObjectifs.length > 1 && (
+              <Segmented
+                ariaLabel="Affichage des objectifs"
+                value={vue}
+                onChange={setVue}
+                options={[
+                  { value: "eventail", label: "Éventail" },
+                  { value: "liste", label: "Liste" },
+                ]}
+              />
+            )}
+          </div>
         </div>
 
         {initialObjectifs.length === 0 ? (
@@ -284,8 +305,27 @@ export default function ObjectifsClient({
             Crée ton premier objectif depuis le panneau de droite.
           </div>
         ) : (
-          <div className="grid g-2">
-            {initialObjectifs.map((o, i) => (
+          <>
+            {vue === "eventail" && initialObjectifs.length > 1 && (
+              <EventailObjectifs
+                objectifs={initialObjectifs.map((o) => ({
+                  id: o.id,
+                  nom: o.nom,
+                  progression: o.progression,
+                  coherence: o.coherence,
+                  type: o.type,
+                }))}
+                actif={actif}
+                onActif={setActif}
+              />
+            )}
+
+            {/* En éventail, une seule fiche : celle de la carte soulevée. En
+                liste, toutes — c'est la vue qui sert à comparer. */}
+            <div className={vue === "liste" ? "grid g-2" : "obj-solo"}>
+              {(vue === "liste" ? initialObjectifs : [initialObjectifs[actif]].filter(Boolean)).map((o, idx) => {
+              const i = vue === "liste" ? idx : actif;
+              return (
               <div className="obj-card" key={o.id}>
                 <div className="obj-top">
                   <div style={{ display: "flex", gap: 13, alignItems: "center", minWidth: 0 }}>
@@ -359,8 +399,10 @@ export default function ObjectifsClient({
                   )}
                 </div>
               </div>
-            ))}
-          </div>
+              );
+            })}
+            </div>
+          </>
         )}
       </section>
 
