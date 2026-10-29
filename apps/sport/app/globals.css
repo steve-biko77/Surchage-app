@@ -855,3 +855,96 @@ input:focus, select:focus, textarea:focus {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: none; }
 }
+
+/* ═══════════════ Ordre des exercices ═══════════════
+   Mode compact pendant la réorganisation : faire glisser les vraies
+   cartes serait impraticable, elles font trois cents pixels de haut et
+   contiennent un formulaire de saisie. */
+
+.seance-outils { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.seance-reorganiser {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 7px 13px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  color: var(--chalk); background: var(--bg-card-2);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+  transition: background 0.16s, color 0.16s;
+}
+.seance-reorganiser:hover { background: var(--bg-card); color: #fff; }
+
+.ordre {
+  border-radius: 18px; overflow: hidden; margin-bottom: 14px;
+  background: var(--bg-card); box-shadow: inset 0 0 0 1px var(--card-border);
+}
+.ordre-tete {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 15px 16px 12px; border-bottom: 1px solid var(--card-border);
+}
+.ordre-tete h3 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.ordre-tete p { margin: 3px 0 0; font-size: 12px; color: var(--grey); }
+.ordre-fermer {
+  margin-left: auto; flex: none; display: grid; place-items: center;
+  width: 30px; height: 30px; border: 0; border-radius: 9px; cursor: pointer;
+  color: var(--grey); background: var(--bg-card-2);
+}
+.ordre-fermer:hover { color: var(--chalk); }
+
+.ordre-liste { list-style: none; margin: 0; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.ordre-ligne {
+  display: flex; align-items: center; gap: 10px; padding: 7px 8px;
+  border-radius: 12px; background: var(--bg-card-2); touch-action: none;
+  transition: background 0.14s, box-shadow 0.14s, transform 0.14s;
+}
+/* La ligne saisie se décolle : c'est elle qu'on déplace, les autres
+   glissent dessous. */
+.ordre-ligne.saisi {
+  background: var(--bg-card);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.8), inset 0 0 0 1px var(--accent);
+  transform: scale(1.015);
+}
+.ordre-poignee {
+  flex: none; display: grid; place-items: center; width: 26px; height: 34px;
+  color: var(--grey); cursor: grab;
+}
+.ordre-ligne.saisi .ordre-poignee { cursor: grabbing; color: var(--accent-text); }
+.ordre-rang {
+  flex: none; width: 20px; text-align: center;
+  font-family: var(--font-display, inherit); font-size: 13px; font-weight: 800;
+  color: var(--grey);
+}
+.ordre-nom {
+  min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px;
+  font-size: 13.5px; font-weight: 600; color: var(--chalk);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ordre-nom small { font-size: 11px; font-weight: 500; color: var(--grey); text-transform: capitalize; }
+
+.ordre-fleches { flex: none; display: flex; flex-direction: column; gap: 2px; }
+.ordre-fleches button {
+  display: grid; place-items: center; width: 30px; height: 22px;
+  border: 0; border-radius: 7px; cursor: pointer;
+  color: var(--chalk); background: var(--bg-card);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+}
+.ordre-fleches button:hover:not(:disabled) { color: #fff; background: var(--accent); }
+.ordre-fleches button:disabled { opacity: 0.3; cursor: default; }
+
+.ordre-erreur { margin: 0 16px; font-size: 12.5px; color: var(--danger, #ef5a6f); }
+
+.ordre-pied { padding: 10px 16px 14px; }
+.ordre-valider {
+  width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px; border: 0; border-radius: 12px; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 700; color: #fff;
+  background: var(--accent);
+}
+/* Desactive : on retire la couleur d'action, pas seulement l'opacite --
+   un bouton bleu a moitie transparent a toujours l'air d'attendre un clic. */
+.ordre-valider:disabled {
+  cursor: default; color: var(--grey); background: var(--bg-card-2);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ordre-ligne { transition: none; }
+}
