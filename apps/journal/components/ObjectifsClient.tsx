@@ -5,7 +5,7 @@ import { showToast } from "@/lib/toast";
 import { ProgressRing } from "./charts";
 import Segmented from "./Segmented";
 import { IconTarget, IconPlus, IconClock, IconX } from "./icons";
-import EventailObjectifs from "./EventailObjectifs";
+import ArcObjectifs from "./ArcObjectifs";
 
 type TypeObjectif = "temps" | "metrique";
 type Sens = "croissant" | "decroissant";
@@ -294,7 +294,7 @@ export default function ObjectifsClient({
                 value={vue}
                 onChange={setVue}
                 options={[
-                  { value: "eventail", label: "Éventail" },
+                  { value: "eventail", label: "Arc" },
                   { value: "liste", label: "Liste" },
                 ]}
               />
@@ -310,7 +310,7 @@ export default function ObjectifsClient({
         ) : (
           <>
             {vue === "eventail" && initialObjectifs.length > 1 && (
-              <EventailObjectifs
+              <ArcObjectifs
                 objectifs={initialObjectifs.map((o) => ({
                   id: o.id,
                   nom: o.nom,
