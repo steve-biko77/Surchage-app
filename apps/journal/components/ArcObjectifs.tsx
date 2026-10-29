@@ -1,17 +1,25 @@
 "use client";
 
-// Les objectifs en éventail — une main de cartes étalée, celle qu'on regarde
-// soulevée hors de l'étalement.
+// Les objectifs sur un arc — des cartes qui roulent sur un très grand cercle,
+// celle qu'on regarde droite à son sommet, les autres inclinées tangentiellement
+// à la courbe.
 //
-// Ce qui fait que ça se lit comme « soulevée » et non comme « la plus proche » :
-// la carte active sort de l'échelle sur laquelle ses voisines sont rangées.
-// Les autres décroissent régulièrement en s'éloignant ; elle, elle saute
-// au-dessus de la série. Sans ce saut, l'œil ne voit qu'un dégradé de tailles.
+// Tout le dessin tient dans UNE rotation par carte. Chaque carte pivote autour
+// du centre du cercle, placé loin sous la scène :
 //
-// L'éventail ne porte QUE l'identification : nom, avancement, rythme tenu. Les
-// commandes vivent dans le panneau en dessous, à plat. Un champ de saisie dans
-// une carte inclinée se vise mal et se lit mal — la rotation est pour l'œil,
-// pas pour le pouce.
+//     transform-origin: 50% calc(100% + rayon)
+//     transform: rotate((i - position) * PAS)
+//
+// La position sur la courbe et l'inclinaison tombent ensemble — une carte qui
+// tourne autour d'un point éloigné suit forcément le cercle, et s'incline
+// forcément de l'angle parcouru. Aucune trigonométrie par carte, aucun sinus,
+// aucun cosinus : la seule chose calculée est un angle, et c'est une
+// soustraction.
+//
+// L'arc ne porte que l'identification : nom, avancement, rythme tenu. Les
+// commandes vivent dans la fiche en dessous, à plat. Un champ de saisie dans
+// une carte inclinée se vise mal — la rotation est pour l'œil, pas pour le
+// pouce.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -33,13 +41,16 @@ const TEINTES = [
   ["#de5168", "#c23a50"],
 ];
 
-const ANGLE = 6;
-const ECART_X = 44;
-const CHUTE_Y = 11;
 /**
- * Cartes étalées de chaque côté. Au-delà, elles s'empilent sur la dernière
- * position et s'effacent : sans cette borne, une liste de dix objectifs
- * projetait des cartes hors du panneau et par-dessus la fiche du dessous.
+ * Angle entre deux cartes voisines. Volontairement petit par rapport au rayon :
+ * les cartes doivent se chevaucher le long de la courbe. Trop d'angle et
+ * l'arc se transforme en file de cartes espacees, la courbe ne se lit plus.
+ */
+const PAS = 8;
+/**
+ * Cartes dessinées de chaque côté. Au-delà on n'en met pas : elles seraient
+ * hors du cadre de toute façon, l'arc est simplement coupé — il continue
+ * au-delà du bord, comme une roue dont on ne voit qu'un secteur.
  */
 const VOISINS = 3;
 
@@ -48,7 +59,7 @@ const CADENCE = 3800;
 /** Silence observé après une action avant de reprendre la rotation. */
 const REPRISE = 9000;
 
-export default function EventailObjectifs({
+export default function ArcObjectifs({
   objectifs,
   actif,
   onActif,
@@ -60,12 +71,11 @@ export default function EventailObjectifs({
   /** Suspend la rotation — typiquement quand on saisit dans la fiche. */
   gele?: boolean;
 }) {
-  // Position flottante : l'index actif pendant le repos, décalé d'une fraction
-  // pendant le glissement pour que l'éventail suive le doigt au lieu de sauter
-  // d'un cran à la relâche.
+  // Position flottante : l'index actif au repos, décalé d'une fraction pendant
+  // le glissement pour que l'arc suive le doigt au lieu de sauter à la relâche.
   const [glisse, setGlisse] = useState(0);
-  // La rotation s'arrête dès qu'on agit, et reprend après un silence. Une
-  // carte qui tourne pendant qu'on vise un bouton est une carte qu'on rate.
+  // La rotation s'arrête dès qu'on agit, et reprend après un silence. Une carte
+  // qui tourne pendant qu'on vise un bouton est une carte qu'on rate.
   const [enPause, setEnPause] = useState(false);
   const sens = useRef(1);
   const repriseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -75,16 +85,11 @@ export default function EventailObjectifs({
   const position = actif + glisse;
   const enGlisse = glisse !== 0;
 
-  // L'arc se centre, pas la carte active. Sur le premier objectif, toutes les
-  // voisines partent du même côté : garder l'active au centre jetait
-  // l'éventail entier vers la droite, hors du panneau. On recentre donc sur
-  // le milieu de la fenêtre visible — la main de cartes reste au milieu, et
-  // c'est le soulèvement qui désigne l'active, pas sa position.
-  const premier = Math.max(0, Math.round(position) - VOISINS);
-  const dernier = Math.min(objectifs.length - 1, Math.round(position) + VOISINS);
-  const recentrage = (premier + dernier) / 2 - position;
+  // Pas de recentrage ici, contrairement a un eventail : la carte active doit
+  // rester DROITE A SON SOMMET, c'est ce qui definit l'arc. Au premier
+  // objectif les voisines sont toutes du meme cote et l'arc est dissymetrique
+  // — c'est voulu, et l'etalement tient dans le cadre meme ainsi.
 
-  /** Marque une action : pause, puis reprise après un silence. */
   const toucher = useCallback(() => {
     setEnPause(true);
     if (repriseRef.current) clearTimeout(repriseRef.current);
@@ -100,8 +105,8 @@ export default function EventailObjectifs({
   );
 
   // Rotation libre, en va-et-vient plutôt qu'en boucle : repasser de la
-  // dernière carte à la première ferait traverser tout l'éventail d'un coup.
-  // Le demi-tour aux extrémités garde un mouvement continu.
+  // dernière carte à la première ferait traverser tout l'arc d'un coup. Le
+  // demi-tour aux extrémités garde un mouvement continu.
   useEffect(() => {
     if (enPause || gele || objectifs.length < 2) return;
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -137,11 +142,11 @@ export default function EventailObjectifs({
       }
       e.currentTarget.setPointerCapture(e.pointerId);
     }
-    const pas = (cadreRef.current?.offsetWidth ?? 340) / 3.2;
+    const pas = (cadreRef.current?.offsetWidth ?? 340) / 3.4;
     const brut = -dx / pas;
-    // Résistance aux bords : on tire dans le vide au ralenti.
     const vise = g.depart + brut;
-    const borne = vise < 0 ? brut * 0.3 : vise > objectifs.length - 1 ? brut * 0.3 : brut;
+    // Résistance aux bords : on tire dans le vide au ralenti.
+    const borne = vise < 0 || vise > objectifs.length - 1 ? brut * 0.3 : brut;
     setGlisse(borne);
   }
 
@@ -156,7 +161,6 @@ export default function EventailObjectifs({
     setGlisse(0);
   }
 
-  // Flèches du clavier : l'éventail est une liste, il doit se parcourir au clavier.
   useEffect(() => {
     const cadre = cadreRef.current;
     if (!cadre) return;
@@ -169,14 +173,14 @@ export default function EventailObjectifs({
   }, [actif, aller]);
 
   return (
-    <div className="evt">
+    <div className="arc">
       <div
-        className="evt-scene"
+        className="arc-scene"
         ref={cadreRef}
         tabIndex={0}
         role="listbox"
         aria-label="Objectifs"
-        aria-activedescendant={`evt-${objectifs[actif]?.id}`}
+        aria-activedescendant={`arc-${objectifs[actif]?.id}`}
         onPointerEnter={toucher}
         onPointerDown={debut}
         onPointerMove={mouvement}
@@ -184,49 +188,47 @@ export default function EventailObjectifs({
         onPointerCancel={fin}
       >
         {objectifs.map((o, i) => {
-          const d = i - position;
-          const loin = Math.abs(d);
-          // Position bornée : l'empilement s'arrête, l'effacement prend le relais.
-          const dBorne = Math.max(-VOISINS, Math.min(VOISINS, d));
+          const angle = i - position;
+          const loin = Math.abs(angle);
+          if (loin > VOISINS + 0.5) return null;
+
           const estActif = Math.round(position) === i;
           const [clair, fonce] = TEINTES[i % TEINTES.length];
-
-          // L'échelle des voisines décroît régulièrement ; l'active saute
-          // par-dessus. C'est ce saut qui la fait lire comme soulevée.
-          const echelleVoisine = 0.9 - Math.min(loin, VOISINS) * 0.045;
-          const echelle = estActif ? 1.06 : echelleVoisine;
-          const monte = estActif ? -26 : 0;
 
           return (
             <button
               key={o.id}
-              id={`evt-${o.id}`}
+              id={`arc-${o.id}`}
               type="button"
               role="option"
               aria-selected={estActif}
-              className={`evt-carte${estActif ? " actif" : ""}`}
+              className={`arc-carte${estActif ? " actif" : ""}`}
               style={{
-                transform: `translate(-50%, 0) translateX(${(dBorne - recentrage) * ECART_X}px) translateY(${Math.min(loin, VOISINS) * CHUTE_Y + monte}px) rotate(${dBorne * ANGLE}deg) scale(${echelle})`,
+                // L'unique rotation. Position et inclinaison en découlent.
+                transform: `rotate(${angle * PAS}deg)`,
                 zIndex: 50 - Math.round(loin * 10),
-                opacity: loin > VOISINS ? 0 : 1,
-                background: `linear-gradient(160deg, ${clair}, ${fonce})`,
+                opacity: Math.max(0, 1 - Math.max(0, loin - VOISINS + 0.6)),
                 transition: enGlisse ? "none" : undefined,
-                pointerEvents: loin > VOISINS ? "none" : undefined,
               }}
               onClick={() => aller(i)}
             >
-              <span className="evt-nom">{o.nom}</span>
-              <span className="evt-sous">{o.type === "temps" ? "Temps investi" : "Métrique"}</span>
-              <span className="evt-bas">
-                <span className="evt-pct">{o.progression}%</span>
-                {o.coherence != null && <span className="evt-coh">{o.coherence}% tenu</span>}
+              {/* La mise en avant de la carte active vit sur une couche
+                  séparée : la rotation reste seule sur le bouton, et la
+                  géométrie de l'arc ne se mélange pas à l'emphase. */}
+              <span className="arc-face" style={{ background: `linear-gradient(160deg, ${clair}, ${fonce})` }}>
+                <span className="arc-nom">{o.nom}</span>
+                <span className="arc-sous">{o.type === "temps" ? "Temps investi" : "Métrique"}</span>
+                <span className="arc-bas">
+                  <span className="arc-pct">{o.progression}%</span>
+                  {o.coherence != null && <span className="arc-coh">{o.coherence}% tenu</span>}
+                </span>
               </span>
             </button>
           );
         })}
       </div>
 
-      <div className="evt-points" role="tablist" aria-label="Choisir un objectif">
+      <div className="arc-points" role="tablist" aria-label="Choisir un objectif">
         {objectifs.map((o, i) => (
           <button
             key={o.id}
