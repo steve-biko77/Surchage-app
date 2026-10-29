@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { resoudreSeanceDuJour } from "@/lib/adapters/seanceDuJour";
 import ExerciseCard from "@/components/ExerciseCard";
+import SeanceReorganisable from "@/components/SeanceReorganisable";
 import { Progress } from "@/components/ui/progress";
 
 export default async function EntrainementEnCoursPage() {
@@ -46,9 +47,17 @@ export default async function EntrainementEnCoursPage() {
         <Progress value={pct} />
       </div>
 
-      {exercicesAvecCible.map((exo) => (
-        <ExerciseCard key={exo.id} exercice={exo} estProchain={exo.id === idProchain} rayerSiComplete />
-      ))}
+      <SeanceReorganisable
+        exercices={exercicesAvecCible.map((e) => ({
+          id: e.id,
+          nom: e.nom,
+          groupeMusculaire: e.groupeMusculaire,
+        }))}
+      >
+        {exercicesAvecCible.map((exo) => (
+          <ExerciseCard key={exo.id} exercice={exo} estProchain={exo.id === idProchain} rayerSiComplete />
+        ))}
+      </SeanceReorganisable>
     </div>
   );
 }

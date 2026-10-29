@@ -28,7 +28,16 @@ import type { GroupeMusculaire } from "@/lib/domain/types";
 /** Proportions de la vignette (56 × 80 px) : la fenêtre les adopte. */
 const RATIO_VIGNETTE = 56 / 80;
 
-export default function MuscleSilhouette({ groupe, nom }: { groupe: string; nom?: string }) {
+export default function MuscleSilhouette({
+  groupe,
+  nom,
+  compact = false,
+}: {
+  groupe: string;
+  nom?: string;
+  /** Format reduit, pour les listes denses (reordonnancement). */
+  compact?: boolean;
+}) {
   const uid = useId().replace(/:/g, "");
 
   const calc = useMemo(() => {
@@ -86,12 +95,12 @@ export default function MuscleSilhouette({ groupe, nom }: { groupe: string; nom?
   }, [groupe, nom]);
 
   if (!calc) {
-    return <div className="h-20 w-14 shrink-0 rounded-lg bg-[var(--bg-card-2)]" aria-hidden="true" />;
+    return <div className={`${compact ? "h-14 w-10" : "h-20 w-14"} shrink-0 rounded-lg bg-[var(--bg-card-2)]`} aria-hidden="true" />;
   }
 
   return (
     <div
-      className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg"
+      className={`relative shrink-0 overflow-hidden rounded-lg ${compact ? "h-14 w-10" : "h-20 w-14"}`}
       style={{ background: "radial-gradient(circle at 50% 35%, rgba(var(--accent-rgb),0.16), transparent 72%)" }}
     >
       <CorpsSvg
