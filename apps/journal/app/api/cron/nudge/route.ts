@@ -8,9 +8,8 @@ import { todayISO, heureLocaleParis } from "@/lib/domain/services";
 import { materialiserTachesRecurrentes } from "@/lib/domain/recurrence";
 import { creerEvenementRappel } from "@/lib/google/calendar";
 import { MESSAGES_JOURNEE_VIDE, MESSAGES_RAPPEL_STANDARD, pickVariant } from "@/lib/nudge/messages";
+import { planifierRappel } from "@/lib/nudge/rappels";
 
-// Evite un doublon si l'appel externe (GitHub Actions) est redondant dans l'heure.
-const DEDOUBLONNAGE_MS = 50 * 60 * 1000;
 // Une fois l'engagement du jour amorce, on ne relance qu'apres 2h d'inactivite.
 const REPRISE_APRES_MS = 2 * 60 * 60 * 1000;
 
@@ -31,15 +30,25 @@ export async function POST(req: Request) {
   }
 
   const today = todayISO();
-  await materialiserTachesRecurrentes(today);
+  // Les occurrences du jour obtiennent leur rappel calendaire des leur creation.
+  for (const tache of await materialiserTachesRecurrentes(today)) {
+    await planifierRappel(tache);
+  }
   const etat = await nudgeStateRepository.getOuCreer();
 
-  const dejaNotifieRecemment =
-    !!etat.lastNotifiedAt && maintenant.getTime() - new Date(etat.lastNotifiedAt).getTime() < DEDOUBLONNAGE_MS;
+  // Une seule relance generique par jour.
+  //
+  // L'ancien garde-fou couvrait 50 minutes, alors que l'ordonnanceur passe
+  // toutes les heures : chaque passage tombait donc systematiquement hors de la
+  // fenetre, et une journee sans tache cochee produisait seize notifications.
+  // Les taches a heure fixe ont desormais leur propre rappel, a la minute pres ;
+  // la relance generique n'a plus aucune raison de se repeter.
+  const dejaNotifieAujourdhui =
+    !!etat.lastNotifiedAt && todayISO(new Date(etat.lastNotifiedAt)) === today;
 
-  async function envoyer(message: string) {
-    if (dejaNotifieRecemment) {
-      return NextResponse.json({ envoye: false, raison: "deja notifie recemment (anti-doublon)" });
+  async function envoyer(message: string, horsBudgetQuotidien = false) {
+    if (dejaNotifieAujourdhui && !horsBudgetQuotidien) {
+      return NextResponse.json({ envoye: false, raison: "relance generique deja envoyee aujourd'hui" });
     }
 
     const canaux = { push: 0, perimes: 0, calendrier: false };
@@ -86,14 +95,20 @@ export async function POST(req: Request) {
   const uneTacheCochee = taches.some((t) => t.fait);
   const validationAujourdhui = await joursValidesRepository.uneValidationLe(today);
 
-  if (!uneTacheCochee && !validationAujourdhui) {
+  // Les taches a heure fixe sont rappelees par le calendrier, a leur heure.
+  // Les compter ici reviendrait a notifier deux fois pour la meme chose : seules
+  // les taches sans heure -- de simples elements de liste -- justifient encore
+  // une relance generique.
+  const tachesSansHeure = taches.filter((t) => !t.heure);
+
+  if (!uneTacheCochee && !validationAujourdhui && tachesSansHeure.length > 0) {
     return envoyer(pickVariant(MESSAGES_RAPPEL_STANDARD, etat.lastMessage));
   }
 
   const inactifDepuis2h =
     !!etat.lastActionAt && maintenant.getTime() - new Date(etat.lastActionAt).getTime() >= REPRISE_APRES_MS;
 
-  if (inactifDepuis2h) {
+  if (inactifDepuis2h && tachesSansHeure.some((t) => !t.fait)) {
     return envoyer(pickVariant(MESSAGES_RAPPEL_STANDARD, etat.lastMessage));
   }
 
