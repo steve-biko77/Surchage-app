@@ -14,6 +14,7 @@ import {
   heureLocaleParis,
 } from "@/lib/domain/services";
 import { materialiserTachesRecurrentes } from "@/lib/domain/recurrence";
+import { planifierRappel } from "@/lib/nudge/rappels";
 import JourClient from "@/components/JourClient";
 import WidgetAccueil from "@/components/WidgetAccueil";
 
@@ -28,8 +29,13 @@ export default async function JourPage({
   const date = dateParam || todayISO();
 
   // Filet de securite si le cron horaire n'a pas encore tourne aujourd'hui.
+  // Les occurrences creees ici obtiennent leur rappel au meme titre que celles
+  // creees par le cron : sans cela, ouvrir cet ecran avant le passage horaire
+  // priverait la journee de ses rappels.
   if (date === todayISO()) {
-    await materialiserTachesRecurrentes(date);
+    for (const tache of await materialiserTachesRecurrentes(date)) {
+      await planifierRappel(tache);
+    }
   }
 
   const today = todayISO();
