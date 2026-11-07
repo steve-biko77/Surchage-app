@@ -5,6 +5,20 @@ import * as schema from "./schema";
 let _db: ReturnType<typeof drizzle> | null = null;
 
 function getConnectionString(): string {
+  // En previsualisation, une variable qui echappe a l'integration Neon.
+  //
+  // Vercel gere DATABASE_URL via l'integration, sur "All Environments" : la
+  // modifier a la main pour separer les environnements fonctionne jusqu'a la
+  // prochaine synchronisation, qui la remet en silence. Une variable d'un autre
+  // nom, invisible de l'integration, ne peut pas etre ecrasee.
+  //
+  // Elle n'est lue qu'en previsualisation, et seulement si elle est definie :
+  // le jour ou l'integration creera une branche par deploiement, il suffira de
+  // la retirer pour revenir au comportement natif.
+  if (process.env.VERCEL_ENV === "preview" && process.env.DATABASE_URL_PREVIEW) {
+    return process.env.DATABASE_URL_PREVIEW;
+  }
+
   const connectionString =
     process.env.DATABASE_URL ||
     process.env.POSTGRES_URL ||
