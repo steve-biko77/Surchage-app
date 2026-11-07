@@ -150,10 +150,16 @@ donnée.
 - `git pull` : vérifie que tu pars du dernier état.
 - La branche part de **`dev`**, jamais de `main`, et porte la clé du ticket :
   `PROD-7-horodater-completion-tache`.
-- **Vérifie que tu pointes sur la base de développement**, pas sur la
-  production. Tant que PROD-11 n'est pas livrée, les environnements de
-  prévisualisation écrivent dans les vraies données : dans ce cas, ne lance
-  aucune migration et n'écris aucune donnée de test.
+- **Les prévisualisations sont isolées de la production depuis PROD-11.** Une
+  branche de prévisualisation lit et écrit la base Neon `dev`, grâce à
+  `DATABASE_URL_PREVIEW`, que l'intégration Neon ne connaît pas et ne peut donc
+  pas écraser. Tu peux y lancer une migration et y écrire des données de test.
+  Deux conséquences à ne pas oublier :
+  - une migration doit être jouée **sur les deux branches**, `dev` puis `main` :
+    une prévisualisation qui marche ne prouve rien sur la production ;
+  - la base `dev` ne contient aujourd'hui que le schéma (PROD-41), donc tout ce
+    qui se calcule sur une durée — série, cohérence, indice, rapports — y
+    affiche zéro. Un écran vide en prévisualisation n'est pas forcément un bug.
 
 ### Pendant
 
@@ -161,7 +167,13 @@ donnée.
   ouvre un ticket — ne l'embarque pas.
 - Les tests se mettent d'abord sur `lib/domain` : c'est la couche sans
   dépendances, donc la moins chère à couvrir et la plus coûteuse à casser.
-  Il n'existe aujourd'hui aucune suite de tests ni de script de lint.
+  Une suite existe désormais, lancée par `npm test` depuis `apps/journal`.
+  Elle tourne sous le lanceur de tests de Node, **sans aucune dépendance** :
+  pas de `npm install` nécessaire pour l'exécuter. Ajoute tes cas à côté des
+  existants (`lib/domain/*.test.ts`) plutôt que de monter un autre cadre.
+- Les imports des fichiers de test portent l'extension `.ts`, parce que Node
+  détype les sources lui-même. C'est voulu, ne les retire pas.
+- Il n'existe toujours aucun script de lint.
 
 ### Fini quand
 
