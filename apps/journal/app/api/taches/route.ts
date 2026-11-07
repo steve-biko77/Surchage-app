@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { tachesRepository } from "@/lib/adapters/repositories";
-import { planifierRappel } from "@/lib/nudge/rappels";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -24,8 +23,5 @@ export async function POST(req: Request) {
     heure: heure || null,
     objectifId: objectifId || null,
   });
-  // Une tache a heure fixe obtient son rappel calendaire. L'appel est
-  // silencieux en cas d'echec : la tache est creee quoi qu'il arrive.
-  await planifierRappel(row);
   return NextResponse.json(row, { status: 201 });
 }

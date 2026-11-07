@@ -2,17 +2,31 @@ name: Nudge Journal
 
 on:
   schedule:
-    # Toutes les heures, 5h-20h UTC = 6h-21h Paris (hiver) / 7h-22h Paris (ete).
-    # La route elle-meme filtre 6h-22h en heure locale Europe/Paris (voir app/api/cron/nudge),
-    # ce qui absorbe le decalage ete/hiver -- ce cron n'a pas besoin d'etre ajuste deux fois par an.
-    - cron: "0 5-20 * * *"
+    # Toutes les cinq minutes, toute la journee.
+    #
+    # La cadence n'est pas une tentative de ponctualite : la route envoie ce qui
+    # etait du depuis son dernier passage, donc un retard de l'ordonnanceur
+    # devient une latence et non une perte. Cinq minutes bornent cette latence.
+    #
+    # Pas de plage horaire ici, volontairement : une tache posee a 4h doit etre
+    # rappelee a 4h. C'est la route qui borne les relances d'encouragement a
+    # 6h-22h en heure locale, ce qui absorbe aussi le decalage ete/hiver --
+    # ce cron n'a donc jamais besoin d'etre ajuste.
+    #
+    # Le depot est public : les minutes GitHub Actions sont gratuites.
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
+
+# Un passage en retard ne doit pas s'empiler sur le suivant.
+concurrency:
+  group: nudge-journal
+  cancel-in-progress: false
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Appeler la route de nudge adaptatif
+      - name: Appeler la route de relance et de rappels
         run: |
           curl -fsS -X POST https://journal-productivity.vercel.app/api/cron/nudge \
             -H "Authorization: Bearer ${{ secrets.NUDGE_SECRET }}"

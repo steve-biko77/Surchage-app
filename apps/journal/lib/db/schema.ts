@@ -62,6 +62,18 @@ export const taches = pgTable("taches", {
   objectifId: uuid("objectif_id").references(() => objectifs.id),
   tacheRecurrenteId: uuid("tache_recurrente_id").references(() => tachesRecurrentes.id),
   ignoree: boolean("ignoree").notNull().default(false), // reportee indefiniment mais explicitement ecartee par l'utilisateur
+  /**
+   * Instant d'envoi du rappel, ou null si aucun rappel n'est encore parti.
+   *
+   * C'est ce qui rend le balayage idempotent : la route passe toutes les cinq
+   * minutes et envoie ce qui etait du depuis son dernier passage, sans jamais
+   * renvoyer deux fois. Nullable a dessein -- null signifie "jamais notifiee",
+   * et c'est le cas de toutes les taches anterieures a cette colonne.
+   *
+   * Une tache dont l'heure est passee depuis trop longtemps est marquee ici
+   * SANS notification : elle est classee traitee plutot que notifiee en retard.
+   */
+  rappelEnvoyeA: timestamp("rappel_envoye_a"),
 });
 
 export const notesJour = pgTable("notes_jour", {
