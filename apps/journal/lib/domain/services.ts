@@ -22,6 +22,25 @@ export function heureLocaleParis(date: Date = new Date()): number {
   return Number(parts.find((p) => p.type === "hour")?.value ?? "0");
 }
 
+/**
+ * Minutes ecoulees depuis minuit, en heure locale de Paris.
+ *
+ * Sert a comparer l'instant courant a l'heure "HH:mm" d'une tache. Passer par
+ * le fuseau plutot que par les composantes de la Date evite le piege classique :
+ * le serveur tourne en UTC, et une comparaison naive decalerait tous les
+ * rappels d'une ou deux heures selon la saison.
+ */
+export function minutesLocalesParis(date: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: FUSEAU,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
+  return get("hour") * 60 + get("minute");
+}
+
 /** Decale une date ISO (YYYY-MM-DD) d'un nombre de jours (peut etre negatif). */
 export function decalerDate(dateISO: string, jours: number): string {
   const [y, m, d] = dateISO.split("-").map(Number);
