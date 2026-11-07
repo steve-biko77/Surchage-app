@@ -12,7 +12,7 @@ import {
   nudgeState,
   pushSubscriptions,
 } from "../db/schema";
-import { eq, and, gte, lte, lt, desc, isNotNull } from "drizzle-orm";
+import { eq, and, gte, lte, lt, desc, isNotNull, isNull, inArray } from "drizzle-orm";
 
 export const disciplinesRepository = {
   async all() {
@@ -238,6 +238,36 @@ export const tachesRepository = {
   },
   async delete(id: string) {
     await db.delete(taches).where(eq(taches.id, id));
+  },
+  /**
+   * Candidates au rappel pour une date : une heure fixee, pas faite, pas
+   * ecartee, rappel jamais envoye.
+   *
+   * Le filtre sur l'heure ECOULEE n'est pas fait ici mais dans le domaine :
+   * comparer "HH:mm" a l'heure locale de Paris est une regle metier, et la
+   * faire en SQL imposerait au depot de connaitre un fuseau.
+   */
+  async candidatesAuRappel(date: string) {
+    return db
+      .select()
+      .from(taches)
+      .where(
+        and(
+          eq(taches.date, date),
+          isNotNull(taches.heure),
+          eq(taches.fait, false),
+          eq(taches.ignoree, false),
+          isNull(taches.rappelEnvoyeA)
+        )
+      );
+  },
+  /**
+   * Marque des rappels comme traites. Sert aussi bien apres un envoi qu'apres
+   * une peremption : dans les deux cas la tache ne doit plus etre reprise.
+   */
+  async marquerRappelsTraites(ids: string[]) {
+    if (ids.length === 0) return;
+    await db.update(taches).set({ rappelEnvoyeA: new Date() }).where(inArray(taches.id, ids));
   },
 };
 

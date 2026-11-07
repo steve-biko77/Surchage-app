@@ -1,23 +1,41 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { autoriseAppelInterne } from "@/lib/nudge/auth";
-import { tachesRepository, joursValidesRepository, nudgeStateRepository, journalCalendarRepository, pushSubscriptionsRepository, objectifsRepository, tracesRepository } from "@/lib/adapters/repositories";
+import {
+  tachesRepository,
+  joursValidesRepository,
+  nudgeStateRepository,
+  pushSubscriptionsRepository,
+  objectifsRepository,
+  tracesRepository,
+} from "@/lib/adapters/repositories";
 import { envoyerPush } from "@/lib/nudge/push";
 import { alerteObjectif, coherenceParObjectif, semaineDe } from "@/lib/domain/coherence";
-import { todayISO, heureLocaleParis } from "@/lib/domain/services";
+import { todayISO, heureLocaleParis, minutesLocalesParis } from "@/lib/domain/services";
 import { materialiserTachesRecurrentes } from "@/lib/domain/recurrence";
-import { creerEvenementRappel } from "@/lib/google/calendar";
+import { trierRappels, composerNotifications } from "@/lib/domain/rappels";
 import { MESSAGES_JOURNEE_VIDE, MESSAGES_RAPPEL_STANDARD, pickVariant } from "@/lib/nudge/messages";
 
-// Evite un doublon si l'appel externe (GitHub Actions) est redondant dans l'heure.
-const DEDOUBLONNAGE_MS = 50 * 60 * 1000;
 // Une fois l'engagement du jour amorce, on ne relance qu'apres 2h d'inactivite.
 const REPRISE_APRES_MS = 2 * 60 * 60 * 1000;
 
 /**
- * Point d'entree appele toutes les heures par .github/workflows/nudge.yml
- * (contourne la limite de cron de Vercel). Decide seul s'il faut notifier :
- * voir la logique adaptative dans le corps de la fonction.
+ * Point d'entree appele toutes les cinq minutes par .github/workflows/nudge.yml.
+ *
+ * Deux responsabilites nettement separees, et c'est volontaire :
+ *
+ *   1. LES RAPPELS DE TACHES, a l'heure que la personne a elle-meme fixee.
+ *      Sans borne horaire : une tache posee a 4h a ete posee a 4h sciemment,
+ *      l'application n'a pas a censurer ce choix. Chaque tache n'est notifiee
+ *      qu'une fois, grace a la marque `rappel_envoye_a`.
+ *
+ *   2. LA RELANCE GENERIQUE, bornee a 6h-22h et plafonnee a UNE PAR JOUR.
+ *      L'ancien garde-fou couvrait 50 minutes alors que l'ordonnanceur passait
+ *      toutes les heures : chaque appel tombait hors de la fenetre, et une
+ *      journee sans tache cochee produisait seize notifications.
+ *
+ * Les deux budgets sont independants : recevoir le rappel de sa tache de 9h
+ * n'empeche pas la relance du soir, et inversement.
  */
 export async function POST(req: Request) {
   if (!autoriseAppelInterne(req)) {
@@ -25,57 +43,74 @@ export async function POST(req: Request) {
   }
 
   const maintenant = new Date();
-  const heure = heureLocaleParis(maintenant);
-  if (heure < 6 || heure >= 22) {
-    return NextResponse.json({ envoye: false, raison: "hors plage 6h-22h (Europe/Paris)" });
+  const today = todayISO(maintenant);
+  await materialiserTachesRecurrentes(today);
+
+  const rappels = await envoyerRappelsDeTaches(today, maintenant);
+  const relance = await envoyerRelanceGenerique(today, maintenant);
+
+  return NextResponse.json({ rappels, relance });
+}
+
+/** Envoie les rappels des taches dont l'heure est passee, une seule fois chacune. */
+async function envoyerRappelsDeTaches(today: string, maintenant: Date) {
+  const candidates = await tachesRepository.candidatesAuRappel(today);
+  if (candidates.length === 0) return { dues: 0, envoyes: 0, perimees: 0 };
+
+  const { aEnvoyer, perimees } = trierRappels(candidates, minutesLocalesParis(maintenant));
+  if (aEnvoyer.length === 0 && perimees.length === 0) {
+    return { dues: 0, envoyes: 0, perimees: 0 };
   }
 
-  const today = todayISO();
-  await materialiserTachesRecurrentes(today);
+  const abonnements = await pushSubscriptionsRepository.all();
+  let envoyes = 0;
+
+  for (const notification of composerNotifications(aEnvoyer)) {
+    const r = await envoyerPush(abonnements, { ...notification, url: "/jour" });
+    envoyes += r.envoyes;
+    for (const endpoint of r.perimes) await pushSubscriptionsRepository.supprimer(endpoint);
+  }
+
+  // Les perimees sont classees sans notification : leur heure est trop loin.
+  const aMarquer = perimees.map((t) => t.id);
+
+  // Les dues ne sont marquees QUE si un envoi a ete tente. Sans appareil
+  // abonne, rien n'est parti : les marquer ferait disparaitre le rappel pour
+  // toujours alors qu'il n'a jamais eu lieu.
+  if (abonnements.length > 0) aMarquer.push(...aEnvoyer.map((t) => t.id));
+
+  await tachesRepository.marquerRappelsTraites(aMarquer);
+
+  return { dues: aEnvoyer.length, envoyes, perimees: perimees.length };
+}
+
+/** Relance d'encouragement : bornee a 6h-22h, au plus une par jour. */
+async function envoyerRelanceGenerique(today: string, maintenant: Date) {
+  const heure = heureLocaleParis(maintenant);
+  if (heure < 6 || heure >= 22) {
+    return { envoye: false, raison: "hors plage 6h-22h (Europe/Paris)" };
+  }
+
   const etat = await nudgeStateRepository.getOuCreer();
+  const dejaNotifieAujourdhui =
+    !!etat.lastNotifiedAt && todayISO(new Date(etat.lastNotifiedAt)) === today;
 
-  const dejaNotifieRecemment =
-    !!etat.lastNotifiedAt && maintenant.getTime() - new Date(etat.lastNotifiedAt).getTime() < DEDOUBLONNAGE_MS;
-
-  async function envoyer(message: string) {
-    if (dejaNotifieRecemment) {
-      return NextResponse.json({ envoye: false, raison: "deja notifie recemment (anti-doublon)" });
+  async function envoyer(message: string, horsBudgetQuotidien = false) {
+    if (dejaNotifieAujourdhui && !horsBudgetQuotidien) {
+      return { envoye: false, raison: "relance generique deja envoyee aujourd'hui" };
     }
 
-    const canaux = { push: 0, perimes: 0, calendrier: false };
-
-    // Canal principal : notification sur les appareils abonnes.
     const abonnements = await pushSubscriptionsRepository.all();
-    if (abonnements.length > 0) {
-      const r = await envoyerPush(abonnements, { titre: "Journal", corps: message, url: "/jour" });
-      canaux.push = r.envoyes;
-      canaux.perimes = r.perimes.length;
-      // Un abonnement revoque par le navigateur n'a plus aucune valeur.
-      for (const endpoint of r.perimes) await pushSubscriptionsRepository.supprimer(endpoint);
+    if (abonnements.length === 0) {
+      return { envoye: false, raison: "aucun appareil abonne" };
     }
 
-    // Canal secondaire. Son absence renvoyait un 409, qui faisait echouer le
-    // workflow GitHub a chaque passage en journee : ce n'est plus une erreur.
-    try {
-      const calendrier = await journalCalendarRepository.get();
-      if (calendrier) {
-        await creerEvenementRappel(calendrier.googleCalendarId, message);
-        canaux.calendrier = true;
-      }
-    } catch {
-      // Un calendrier en panne ne doit pas annuler un push deja parti.
-    }
-
-    if (canaux.push === 0 && !canaux.calendrier) {
-      return NextResponse.json({
-        envoye: false,
-        raison: "aucun canal disponible : aucun appareil abonne et pas de calendrier connecte",
-        canaux,
-      });
-    }
+    const r = await envoyerPush(abonnements, { titre: "Journal", corps: message, url: "/jour" });
+    for (const endpoint of r.perimes) await pushSubscriptionsRepository.supprimer(endpoint);
+    if (r.envoyes === 0) return { envoye: false, raison: "aucun envoi abouti", message };
 
     await nudgeStateRepository.enregistrerNotification(message);
-    return NextResponse.json({ envoye: true, message, canaux });
+    return { envoye: true, message, destinataires: r.envoyes };
   }
 
   const taches = await tachesRepository.parDate(today);
@@ -86,29 +121,35 @@ export async function POST(req: Request) {
   const uneTacheCochee = taches.some((t) => t.fait);
   const validationAujourdhui = await joursValidesRepository.uneValidationLe(today);
 
-  if (!uneTacheCochee && !validationAujourdhui) {
+  // Les taches a heure fixe ont leur propre rappel, a l'heure dite. Les compter
+  // ici reviendrait a notifier deux fois pour la meme chose : seules les taches
+  // sans heure -- de simples elements de liste -- justifient une relance.
+  const sansHeureRestantes = taches.filter((t) => !t.heure && !t.fait && !t.ignoree);
+
+  if (!uneTacheCochee && !validationAujourdhui && sansHeureRestantes.length > 0) {
     return envoyer(pickVariant(MESSAGES_RAPPEL_STANDARD, etat.lastMessage));
   }
 
   const inactifDepuis2h =
-    !!etat.lastActionAt && maintenant.getTime() - new Date(etat.lastActionAt).getTime() >= REPRISE_APRES_MS;
+    !!etat.lastActionAt &&
+    maintenant.getTime() - new Date(etat.lastActionAt).getTime() >= REPRISE_APRES_MS;
 
-  if (inactifDepuis2h) {
+  if (inactifDepuis2h && sansHeureRestantes.length > 0) {
     return envoyer(pickVariant(MESSAGES_RAPPEL_STANDARD, etat.lastMessage));
   }
 
   // Rappel hebdomadaire : un objectif qui n'a pas bouge de la semaine.
   //
-  // Il ne passe qu'une fois, a 18h, et seulement quand la journee est deja
-  // engagee -- sinon il viendrait s'empiler sur le rappel du jour. Une seule
-  // heure, parce que l'anti-doublon ne couvre que 50 minutes et qu'un rappel
-  // repete trois apres-midi d'affilee est un rappel qu'on apprend a ignorer.
-  if (heure === 18) {
+  // Il ne passe qu'a 18h, et echappe au budget quotidien : il parle de la
+  // semaine et non de la journee, et sa frequence naturelle est deja d'au plus
+  // une fois par jour. Une seule heure, parce qu'un rappel repete trois
+  // apres-midi d'affilee est un rappel qu'on apprend a ignorer.
+  if (heure === 18 && minutesLocalesParis(maintenant) % 60 < 5) {
     const message = await rappelObjectifNeglige(today);
-    if (message) return envoyer(message);
+    if (message) return envoyer(message, true);
   }
 
-  return NextResponse.json({ envoye: false, raison: "engagement deja amorce aujourd'hui" });
+  return { envoye: false, raison: "engagement deja amorce aujourd'hui" };
 }
 
 /**
@@ -131,6 +172,6 @@ async function rappelObjectifNeglige(today: string): Promise<string | null> {
 
   const negliges = rows.filter((r) => alerteObjectif(coherences.get(r.id)!, today) === "neglige");
   if (negliges.length === 0) return null;
-  if (negliges.length === 1) return `« ${negliges[0].nom} » n'a pas bouge de la semaine.`;
-  return `${negliges.length} objectifs n'ont pas bouge de la semaine.`;
+  if (negliges.length === 1) return `« ${negliges[0].nom} » n'a pas bougé de la semaine.`;
+  return `${negliges.length} objectifs n'ont pas bougé de la semaine.`;
 }
