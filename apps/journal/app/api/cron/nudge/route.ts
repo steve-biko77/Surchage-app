@@ -52,22 +52,53 @@ export async function POST(req: Request) {
   return NextResponse.json({ rappels, relance });
 }
 
+/**
+ * Journal d'un passage de rappels.
+ *
+ * Quatre nombres qui comptent quatre choses differentes, et aucun ne doit
+ * pouvoir etre pris pour un autre :
+ *
+ *   dues        taches dont l'heure est passee et qui meritaient un rappel
+ *   taches      celles effectivement marquees comme rappelees
+ *   livraisons  envois push repartis -- UN PAR APPAREIL ABONNE
+ *   perimees    taches classees sans notification, heure trop ancienne
+ *
+ * `dues` et `taches` ne divergent que dans un cas, et c'est precisement celui
+ * qu'on veut voir : aucun appareil abonne. `livraisons` depasse `taches` des
+ * qu'il y a plus d'un appareil, et peut aussi etre plus petit qu'elle quand
+ * plusieurs taches sont regroupees en un seul message.
+ *
+ * Ce journal est le seul endroit d'ou l'on observe le mecanisme de l'exterieur.
+ * Un rappel qui echoue ne se voit pas -- il se manifeste par du silence --
+ * donc ces nombres sont le seul temoin disponible, et un temoin qui se lit de
+ * travers mentira le jour ou l'on en aura besoin.
+ */
+type JournalDesRappels = {
+  dues: number;
+  taches: number;
+  livraisons: number;
+  perimees: number;
+};
+
+const RIEN_A_FAIRE: JournalDesRappels = { dues: 0, taches: 0, livraisons: 0, perimees: 0 };
+
 /** Envoie les rappels des taches dont l'heure est passee, une seule fois chacune. */
-async function envoyerRappelsDeTaches(today: string, maintenant: Date) {
+async function envoyerRappelsDeTaches(
+  today: string,
+  maintenant: Date
+): Promise<JournalDesRappels> {
   const candidates = await tachesRepository.candidatesAuRappel(today);
-  if (candidates.length === 0) return { dues: 0, envoyes: 0, perimees: 0 };
+  if (candidates.length === 0) return RIEN_A_FAIRE;
 
   const { aEnvoyer, perimees } = trierRappels(candidates, minutesLocalesParis(maintenant));
-  if (aEnvoyer.length === 0 && perimees.length === 0) {
-    return { dues: 0, envoyes: 0, perimees: 0 };
-  }
+  if (aEnvoyer.length === 0 && perimees.length === 0) return RIEN_A_FAIRE;
 
   const abonnements = await pushSubscriptionsRepository.all();
-  let envoyes = 0;
+  let livraisons = 0;
 
   for (const notification of composerNotifications(aEnvoyer)) {
     const r = await envoyerPush(abonnements, { ...notification, url: "/jour" });
-    envoyes += r.envoyes;
+    livraisons += r.envoyes;
     for (const endpoint of r.perimes) await pushSubscriptionsRepository.supprimer(endpoint);
   }
 
@@ -77,11 +108,17 @@ async function envoyerRappelsDeTaches(today: string, maintenant: Date) {
   // Les dues ne sont marquees QUE si un envoi a ete tente. Sans appareil
   // abonne, rien n'est parti : les marquer ferait disparaitre le rappel pour
   // toujours alors qu'il n'a jamais eu lieu.
-  if (abonnements.length > 0) aMarquer.push(...aEnvoyer.map((t) => t.id));
+  const rappelees = abonnements.length > 0 ? aEnvoyer : [];
+  aMarquer.push(...rappelees.map((t) => t.id));
 
   await tachesRepository.marquerRappelsTraites(aMarquer);
 
-  return { dues: aEnvoyer.length, envoyes, perimees: perimees.length };
+  return {
+    dues: aEnvoyer.length,
+    taches: rappelees.length,
+    livraisons,
+    perimees: perimees.length,
+  };
 }
 
 /** Relance d'encouragement : bornee a 6h-22h, au plus une par jour. */
