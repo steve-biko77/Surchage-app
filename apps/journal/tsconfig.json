@@ -11,6 +11,11 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Les tests du domaine tournent sous le lanceur de Node, qui detype les
+    // sources lui-meme et exige donc l'extension ".ts" dans les imports. Cette
+    // option laisse le meme fichier etre lu par les deux compilateurs, et c'est
+    // ce qui permet a la suite de tourner sans aucune dependance installee.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
