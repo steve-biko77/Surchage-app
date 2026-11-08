@@ -14,7 +14,11 @@ export default async function RapportPage({
   const dateFin = todayISO();
   const dateDebut = decalerDate(dateFin, -(periode - 1));
 
-  const rapport = await new JournalModule().getRapport(dateDebut, dateFin);
+  const module = new JournalModule();
+  const [rapport, engagement] = await Promise.all([
+    module.getRapport(dateDebut, dateFin),
+    module.getEngagement(dateDebut, dateFin),
+  ]);
 
-  return <RapportClient periode={periode} rapport={rapport} />;
+  return <RapportClient periode={periode} rapport={rapport} engagement={engagement} />;
 }

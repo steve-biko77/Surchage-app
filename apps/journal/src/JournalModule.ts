@@ -4,6 +4,12 @@ import { JarvisModule, type Discipline, type Objectif } from "@productivity/core
 import { disciplinesRepository, joursValidesRepository, objectifsRepository, tachesRepository } from "../lib/adapters/repositories";
 import { disciplineDepuisRow, objectifDepuisRow } from "../lib/domain/mappers";
 import { calculerStreak, enumererDates, todayISO } from "../lib/domain/services";
+import {
+  profilsParSource,
+  rythmeParJour,
+  type CocheBrute,
+  type ProfilDHeures,
+} from "../lib/domain/engagement";
 
 export interface RapportDiscipline {
   id: string;
@@ -37,6 +43,26 @@ export interface RapportJournal {
   serieJournaliere: RapportJourSerie[];
 }
 
+export interface RapportRythme {
+  enBloc: number;
+  auFilDeLEau: number;
+  indetermine: number;
+  /** Moyenne des passages par journee concluante, ou null s'il n'y en a aucune. */
+  sessionsMoyennes: number | null;
+}
+
+export interface RapportEngagement {
+  /** Taches : la fenetre du rapport, car l'horodatage ne date que de PROD-7. */
+  taches: ProfilDHeures;
+  /** Disciplines : TOUT l'historique, car `created_at` existe depuis le debut. */
+  disciplines: ProfilDHeures;
+  /** Premiere journee reellement observee pour les disciplines, ou null. */
+  disciplinesDepuis: string | null;
+  rythme: RapportRythme;
+  /** Coches qui n'ont pas pu etre comptees, et pourquoi. */
+  ecartees: { sansHeure: number; horsJour: number };
+}
+
 export class JournalModule extends JarvisModule {
   readonly id = "journal";
   readonly nom = "Journal";
@@ -68,6 +94,69 @@ export class JournalModule extends JarvisModule {
         };
       })
     );
+  }
+
+  /**
+   * Profil d'heures et rythme de coche, pour la page /rapport.
+   *
+   * Deux fenetres differentes, et c'est voulu : les taches ne sont horodatees
+   * que depuis la mise en place de `fait_a`, tandis que les validations de
+   * discipline le sont depuis le premier jour d'utilisation. Enfermer les
+   * disciplines dans la fenetre du rapport jetterait un historique deja
+   * disponible, au moment precis ou il devient lisible.
+   *
+   * Le rythme, lui, porte sur la seule fenetre : c'est une description de la
+   * periode affichee, pas une moyenne de toute la vie du journal.
+   */
+  async getEngagement(dateDebut: string, dateFin: string): Promise<RapportEngagement> {
+    const [tachesPeriode, validations] = await Promise.all([
+      tachesRepository.entreDates(dateDebut, dateFin),
+      joursValidesRepository.tous(),
+    ]);
+
+    // Seule une tache COCHEE est une coche. Une tache jamais faite n'a pas
+    // d'heure parce qu'elle n'a pas eu lieu, ce qui n'a rien d'une donnee
+    // manquante : la compter comme telle gonflerait le nombre d'ecartees.
+    const cochesTaches: CocheBrute[] = tachesPeriode
+      .filter((t) => t.fait)
+      .map((t) => ({ jour: t.date, instant: t.faitA, source: "tache" as const }));
+
+    const cochesDisciplines: CocheBrute[] = validations.map((v) => ({
+      jour: v.date,
+      instant: v.createdAt,
+      source: "discipline" as const,
+    }));
+
+    const profils = profilsParSource([...cochesTaches, ...cochesDisciplines]);
+
+    const dansLaFenetre = (c: CocheBrute) => c.jour >= dateDebut && c.jour <= dateFin;
+    const { jours } = rythmeParJour([
+      ...cochesTaches,
+      ...cochesDisciplines.filter(dansLaFenetre),
+    ]);
+
+    const enBloc = jours.filter((j) => j.mode === "en-bloc").length;
+    const auFilDeLEau = jours.filter((j) => j.mode === "au-fil-de-l-eau").length;
+    const indetermine = jours.filter((j) => j.mode === "indetermine").length;
+    const concluantes = jours.filter((j) => j.mode !== "indetermine");
+    const sessionsMoyennes =
+      concluantes.length > 0
+        ? Math.round((concluantes.reduce((s, j) => s + j.sessions, 0) / concluantes.length) * 10) / 10
+        : null;
+
+    // La premiere journee REELLEMENT observee, qui n'est pas forcement la plus
+    // ancienne date presente : un import en masse porte des dates anciennes
+    // avec un horodatage recent, et son heure ne dit rien des habitudes.
+    const joursObserves = rythmeParJour(cochesDisciplines).jours;
+    const disciplinesDepuis = joursObserves.length > 0 ? joursObserves[0].jour : null;
+
+    return {
+      taches: profils.tache,
+      disciplines: profils.discipline,
+      disciplinesDepuis,
+      rythme: { enBloc, auFilDeLEau, indetermine, sessionsMoyennes },
+      ecartees: { sansHeure: profils.sansHeure, horsJour: profils.horsJour },
+    };
   }
 
   /** Agrege les chiffres d'engagement sur [dateDebut, dateFin] pour la page /rapport. */
