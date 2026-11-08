@@ -1,8 +1,7 @@
 # Refonte frontend — Surcharge
 
-Brief d'exécution pour Claude Code. Rédigé à partir du code réellement en place
-le 13/10/2026, pas d'un projet imaginé. À donner tel quel, ou par phase :
-« lis `REFONTE-FRONTEND.md` et exécute la phase 2 ».
+Brief d'exécution. Rédigé à partir du code réellement en place le 13/10/2026,
+pas d'un projet imaginé. À prendre tel quel, ou par phase.
 
 ---
 

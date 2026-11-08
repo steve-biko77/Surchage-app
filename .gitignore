@@ -10,3 +10,7 @@ dist
 *.tsbuildinfo
 .claude/settings.local.json
 **/.claude/settings.local.json
+# Fichier de contexte regenere automatiquement par `next dev` : il n'a rien a
+# faire dans le depot et reviendrait a chaque lancement.
+AGENTS.md
+**/AGENTS.md
