@@ -25,7 +25,7 @@ import {
   PEREMPTION_MINUTES,
   MAX_NOTIFICATIONS_INDIVIDUELLES,
   type TacheProgrammee,
-} from "./rappels.ts";
+} from "./rappels";
 
 /** Fabrique une tache ; l'identifiant reprend l'heure, pour lire les echecs. */
 function tache(heure: string | null, texte = "faire la chose"): TacheProgrammee {

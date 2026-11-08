@@ -14,7 +14,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { todayISO, heureLocaleParis, minutesLocalesParis } from "./services.ts";
+import { todayISO, heureLocaleParis, minutesLocalesParis } from "./services";
 
 describe("minutesLocalesParis", () => {
   test("en hiver, Paris est a UTC+1", () => {
