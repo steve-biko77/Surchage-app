@@ -1,0 +1,18 @@
+-- PROD-7 : instant de la coche d'une tache.
+--
+-- AVEC FUSEAU (timestamptz), contrairement aux autres colonnes d'horodatage du
+-- schema. Mesure a l'appui : pour un meme instant, node-postgres envoie
+-- "11:30:00+00:00" depuis un serveur en UTC et "12:30:00+01:00" depuis une
+-- machine en Europe/Paris. Une colonne sans fuseau jette le decalage et garde
+-- l'heure murale -- le meme instant y serait donc stocke differemment selon
+-- l'endroit ou le code tourne, et relu faux d'une a deux heures selon la
+-- saison. C'est la colonne dont l'heure exacte EST la donnee : l'ambiguite y
+-- est inacceptable.
+--
+-- Nullable a dessein, et aucun UPDATE de rattrapage n'accompagne cette
+-- migration : les taches cochees avant aujourd'hui gardent fait_a a NULL. Les
+-- remplir avec `date` a minuit aurait produit un pic de coches a 00h00
+-- indiscernable de vraies coches de minuit, et definitif.
+--
+-- Idempotente : rejouable sur dev comme sur main.
+ALTER TABLE taches ADD COLUMN IF NOT EXISTS fait_a timestamptz;

@@ -229,10 +229,23 @@ export const tachesRepository = {
     const [row] = await db.update(taches).set({ ignoree: true }).where(eq(taches.id, id)).returning();
     return row;
   },
+  /**
+   * Bascule l'etat d'une tache et horodate la coche.
+   *
+   * Decocher remet `faitA` a null : une tache decochee puis recochee porte
+   * l'heure de la DERNIERE coche, et pas celle de la premiere. C'est la seule
+   * lecture honnete -- garder la premiere heure ferait dire au profil
+   * d'habitudes qu'une chose a ete faite a un moment ou elle a ete defaite.
+   */
   async toggleFait(id: string) {
     const [existant] = await db.select().from(taches).where(eq(taches.id, id));
     if (!existant) throw new Error("Tache introuvable");
-    const [row] = await db.update(taches).set({ fait: !existant.fait }).where(eq(taches.id, id)).returning();
+    const fait = !existant.fait;
+    const [row] = await db
+      .update(taches)
+      .set({ fait, faitA: fait ? new Date() : null })
+      .where(eq(taches.id, id))
+      .returning();
     if (row.fait) await nudgeStateRepository.enregistrerAction();
     return row;
   },
