@@ -167,12 +167,19 @@ donnée.
   ouvre un ticket — ne l'embarque pas.
 - Les tests se mettent d'abord sur `lib/domain` : c'est la couche sans
   dépendances, donc la moins chère à couvrir et la plus coûteuse à casser.
-  Une suite existe désormais, lancée par `npm test` depuis `apps/journal`.
-  Elle tourne sous le lanceur de tests de Node, **sans aucune dépendance** :
-  pas de `npm install` nécessaire pour l'exécuter. Ajoute tes cas à côté des
-  existants (`lib/domain/*.test.ts`) plutôt que de monter un autre cadre.
-- Les imports des fichiers de test portent l'extension `.ts`, parce que Node
-  détype les sources lui-même. C'est voulu, ne les retire pas.
+  Une suite existe désormais, lancée par `npm test` depuis `apps/journal` :
+  le lanceur intégré de Node, avec `tsx` pour le détypage. Ajoute tes cas à
+  côté des existants (`lib/domain/*.test.ts`) plutôt que de monter un autre
+  cadre.
+- **Les imports restent sans extension**, partout, y compris dans les tests.
+  Une première version faisait tourner la suite sans aucune dépendance, au
+  prix d'imports en `.ts` jusque dans le code de production. Abandonné : rien
+  ne prouvait que le bundler de Next résolvait ces chemins, et le vérifier
+  demandait un `next build` complet qui dépasse la limite de temps des outils
+  disponibles. Une propriété agréable ne vaut pas un risque non vérifiable
+  dans du code destiné aux pages.
+- **Mesure plutôt que suppose, et quand tu ne peux pas mesurer, choisis
+  l'option qui n'a pas besoin de preuve.** C'est la leçon du point précédent.
 - Il n'existe toujours aucun script de lint.
 
 ### Fini quand

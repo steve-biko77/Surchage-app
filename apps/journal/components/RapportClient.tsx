@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { GaugeArc, RadarChart, AreaChart, ProgressRing, MiniSpark, CountUp } from "./charts";
+import { GaugeArc, RadarChart, AreaChart, ProgressRing, MiniSpark, CountUp, HourHistogram } from "./charts";
 import Segmented from "./Segmented";
 import { IconChart, IconFlame, IconTarget, IconSparkle, IconEye, IconCheck, IconSun, IconLayers } from "./icons";
 
@@ -16,6 +16,15 @@ type Rapport = {
   joursEngages: number;
   joursTotal: number;
   serieJournaliere: RapportJourSerie[];
+};
+
+type ProfilHeures = { parHeure: number[]; total: number; heureDePointe: number | null };
+type Engagement = {
+  taches: ProfilHeures;
+  disciplines: ProfilHeures;
+  disciplinesDepuis: string | null;
+  rythme: { enBloc: number; auFilDeLEau: number; indetermine: number; sessionsMoyennes: number | null };
+  ecartees: { sansHeure: number; horsJour: number };
 };
 
 function lectureDuScore(score: number): { titre: string; texte: string } {
@@ -56,7 +65,15 @@ function formatDateCourte(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-export default function RapportClient({ periode, rapport }: { periode: number; rapport: Rapport }) {
+export default function RapportClient({
+  periode,
+  rapport,
+  engagement,
+}: {
+  periode: number;
+  rapport: Rapport;
+  engagement: Engagement;
+}) {
   const router = useRouter();
 
   const joursPct = rapport.joursTotal > 0 ? Math.round((rapport.joursEngages / rapport.joursTotal) * 100) : 0;
@@ -360,6 +377,141 @@ export default function RapportClient({ periode, rapport }: { periode: number; r
           </p>
         </section>
       </div>
+
+      {/* ─── Profil d'heures ─── */}
+      <section className="panel panel-pad-lg spot">
+        <div className="panel-head">
+          <div className="chip">
+            <IconSun />
+          </div>
+          <div className="ph-text">
+            <h2>À quelles heures tu agis</h2>
+            <p>Moment de la coche, heure de Paris</p>
+          </div>
+          {engagement.disciplines.heureDePointe !== null && (
+            <div className="ph-right">
+              <span className="delta flat">Plus dense à {engagement.disciplines.heureDePointe} h</span>
+            </div>
+          )}
+        </div>
+
+        <div className="grid g-2" style={{ gap: 22 }}>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 2 }}>Disciplines</div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginBottom: 8 }}>
+              {engagement.disciplines.total > 0
+                ? `${engagement.disciplines.total} validations${
+                    engagement.disciplinesDepuis ? ` depuis le ${formatDateCourte(engagement.disciplinesDepuis)}` : ""
+                  }`
+                : "Aucune validation horodatée"}
+            </div>
+            {engagement.disciplines.total > 0 ? (
+              <HourHistogram parHeure={engagement.disciplines.parHeure} />
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--ink-4)", margin: 0 }}>
+                Rien à montrer tant qu'aucune discipline n'a été validée.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 2 }}>Tâches</div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-4)", marginBottom: 8 }}>
+              {engagement.taches.total > 0
+                ? `${engagement.taches.total} coches sur la période`
+                : "Aucune coche horodatée sur la période"}
+            </div>
+            {engagement.taches.total > 0 ? (
+              <HourHistogram parHeure={engagement.taches.parHeure} accent="#0ea98f" />
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--ink-4)", margin: 0 }}>
+                L'heure des tâches n'est enregistrée que depuis peu. Ce graphe se remplira
+                au fil des prochaines journées.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Dire sur quoi le calcul se fonde, et surtout ce qu'il a laissé de
+            côté. Un graphique muet sur son propre trou de données ment par
+            omission. */}
+        {(engagement.ecartees.sansHeure > 0 || engagement.ecartees.horsJour > 0) && (
+          <p style={{ fontSize: 11.5, color: "var(--ink-4)", margin: "14px 0 0" }}>
+            Non comptées :{" "}
+            {engagement.ecartees.sansHeure > 0 && (
+              <>
+                <strong>{engagement.ecartees.sansHeure}</strong> coches sans heure, antérieures
+                à la mesure
+              </>
+            )}
+            {engagement.ecartees.sansHeure > 0 && engagement.ecartees.horsJour > 0 && " · "}
+            {engagement.ecartees.horsJour > 0 && (
+              <>
+                <strong>{engagement.ecartees.horsJour}</strong> coches posées un autre jour que
+                celui qu'elles décrivent, dont l'heure ne dit rien d'une habitude
+              </>
+            )}
+            .
+          </p>
+        )}
+      </section>
+
+      {/* ─── Rythme de la journée ─── */}
+      <section className="panel panel-pad-lg spot">
+        <div className="panel-head">
+          <div className="chip">
+            <IconLayers />
+          </div>
+          <div className="ph-text">
+            <h2>En une fois ou en plusieurs</h2>
+            <p>Nombre de passages dans l'application par journée</p>
+          </div>
+          {engagement.rythme.sessionsMoyennes !== null && (
+            <div className="ph-right">
+              <span className="delta flat">
+                {engagement.rythme.sessionsMoyennes.toLocaleString("fr-FR")} passage
+                {engagement.rythme.sessionsMoyennes >= 2 ? "s" : ""} par jour
+              </span>
+            </div>
+          )}
+        </div>
+
+        {engagement.rythme.enBloc + engagement.rythme.auFilDeLEau + engagement.rythme.indetermine === 0 ? (
+          <p style={{ fontSize: 12.5, color: "var(--ink-4)", margin: 0 }}>
+            Aucune journée horodatée sur la période.
+          </p>
+        ) : (
+          <>
+            <div className="grid g-3">
+              {[
+                { nom: "En une fois", valeur: engagement.rythme.enBloc, detail: "toutes les coches d'affilée" },
+                { nom: "En plusieurs fois", valeur: engagement.rythme.auFilDeLEau, detail: "retours dans la journée" },
+                { nom: "Trop peu de coches", valeur: engagement.rythme.indetermine, detail: "moins de trois, rien à conclure" },
+              ].map((c) => (
+                <div
+                  key={c.nom}
+                  style={{
+                    padding: 14,
+                    border: "1px solid var(--line)",
+                    borderRadius: "var(--r-md)",
+                    background: "var(--surface-2)",
+                  }}
+                >
+                  <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.03em" }}>
+                    <CountUp to={c.valeur} />
+                  </div>
+                  <div style={{ fontSize: 12.5, fontWeight: 650, marginTop: 2 }}>{c.nom}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 3 }}>{c.detail}</div>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 11.5, color: "var(--ink-4)", margin: "12px 0 0" }}>
+              Deux coches séparées de plus de quatre-vingt-dix minutes comptent comme deux
+              passages distincts.
+            </p>
+          </>
+        )}
+      </section>
 
       {/* ─── Objectifs ─── */}
       <section className="panel panel-pad-lg spot">

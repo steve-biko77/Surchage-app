@@ -83,6 +83,17 @@ export const joursValidesRepository = {
       .where(eq(joursValides.date, date));
     return rows.map((r) => r.disciplineId);
   },
+  /**
+   * Tout l'historique des validations, disciplines confondues.
+   *
+   * Pour les analyses retroactives : `created_at` est pose depuis le premier
+   * jour d'utilisation, donc le profil d'heures des disciplines porte sur
+   * l'historique entier et non sur la seule fenetre du rapport. C'est la ou un
+   * motif stable devient visible.
+   */
+  async tous() {
+    return db.select().from(joursValides);
+  },
   /** Toutes les validations avec note, tous jours confondus (pour la page /journal). */
   async avecNotes() {
     return db

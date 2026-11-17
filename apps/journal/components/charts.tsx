@@ -498,6 +498,121 @@ export function MiniSpark({
   );
 }
 
+/* ─────────────────── Histogramme des vingt-quatre heures ─────────────────── */
+
+/**
+ * Répartition d'un comptage sur les heures d'une journée.
+ *
+ * Les vingt-quatre barres sont toujours dessinées, y compris les heures à
+ * zéro : ce sont elles qui donnent sa forme au profil. N'afficher que les
+ * heures peuplées produirait un graphe dense et faux, où trois heures
+ * éparpillées dans la journée se toucheraient.
+ *
+ * Aucune heure n'est colorée comme bonne ou mauvaise — il n'y a pas d'heure
+ * vertueuse. Seule l'heure de pointe est accentuée, et c'est un fait, pas un
+ * jugement.
+ */
+export function HourHistogram({
+  parHeure,
+  accent = "#1d7fe0",
+}: {
+  parHeure: number[];
+  accent?: string;
+}) {
+  const on = useReveal(150);
+  const [hover, setHover] = useState<number | null>(null);
+
+  const W = 600;
+  const H = 150;
+  const padB = 24;
+  const max = Math.max(...parHeure, 1);
+  const total = parHeure.reduce((a, b) => a + b, 0);
+  const pointe = total > 0 ? parHeure.indexOf(max) : -1;
+
+  const gap = 4;
+  const bw = (W - gap * 23) / 24;
+  const x = (h: number) => h * (bw + gap);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }}>
+        {parHeure.map((v, h) => {
+          // Plancher de 9 px pour toute heure peuplée. L'échelle reste
+          // strictement linéaire -- rien n'est comprimé ni exagéré -- mais une
+          // heure à deux coches face à un pic à quatre-vingt-cinq tomberait à
+          // trois pixels et se confondrait avec les heures vides. Le plancher
+          // ne change pas les proportions, il garantit qu'exister se voit.
+          const hauteur = v > 0 ? Math.max(9, (v / max) * (H - padB - 10)) : 3;
+          const actif = hover === h;
+          return (
+            <g key={h}>
+              <rect
+                x={x(h)}
+                y={H - padB - (on ? hauteur : 0)}
+                width={bw}
+                height={on ? hauteur : 0}
+                rx={2.5}
+                fill={v === 0 ? "var(--line)" : accent}
+                opacity={v === 0 ? 1 : actif ? 1 : h === pointe ? 0.95 : 0.55}
+                style={{
+                  transition: `height .55s cubic-bezier(.22,1,.36,1) ${h * 0.02}s, y .55s cubic-bezier(.22,1,.36,1) ${h * 0.02}s, opacity .15s ease`,
+                }}
+              />
+              {/* Zone de survol pleine hauteur : viser une barre de 4 px au
+                  doigt est impossible, viser sa colonne ne l'est pas. */}
+              <rect
+                x={x(h) - gap / 2}
+                y={0}
+                width={bw + gap}
+                height={H - padB}
+                fill="transparent"
+                onMouseEnter={() => setHover(h)}
+                onMouseLeave={() => setHover(null)}
+              />
+            </g>
+          );
+        })}
+
+        {[0, 6, 12, 18, 23].map((h) => (
+          <text
+            key={`l${h}`}
+            x={x(h) + bw / 2}
+            y={H - 7}
+            textAnchor="middle"
+            fontSize={10}
+            fontWeight={600}
+            fill="#a9b9c9"
+          >
+            {h}h
+          </text>
+        ))}
+      </svg>
+
+      {hover !== null && parHeure[hover] > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            left: `${((x(hover) + bw / 2) / W) * 100}%`,
+            top: 0,
+            transform: "translate(-50%, -110%)",
+            background: "var(--ink)",
+            color: "#fff",
+            fontSize: 11.5,
+            fontWeight: 600,
+            padding: "5px 9px",
+            borderRadius: 7,
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            boxShadow: "0 8px 18px -8px rgba(13,27,46,.6)",
+          }}
+        >
+          {parHeure[hover]} à {hover}h
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─────────────────────────── Compteur animé ─────────────────────────── */
 
 export function CountUp({ to, duration = 900, suffix = "" }: { to: number; duration?: number; suffix?: string }) {
